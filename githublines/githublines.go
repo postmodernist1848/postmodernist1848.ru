@@ -1,13 +1,11 @@
-package main
+package githublines
 
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,7 +50,7 @@ func randomFilename() string {
     return hex.EncodeToString(randBytes)
 }
 
-func countLinesRepo(repo Repo, c chan int) {
+func CountLinesRepo(repo Repo, c chan int) {
     url := fmt.Sprintf("https://github.com/%v", repo.FullName)
     dir := randomFilename()
     cmd := exec.Command("git", "clone", "--depth", "1", url, dir)
@@ -86,34 +84,6 @@ func countLinesRepo(repo Repo, c chan int) {
 
     os.RemoveAll(dir)
     c <- linesCount
-}
-
-func main() {
-    username := os.Args[1]
-    url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
-    resp, err := http.Get(url)
-    if err != nil {
-        panic(err)
-    }
-    defer resp.Body.Close()
-    if resp.StatusCode != http.StatusOK {
-        panic(resp.StatusCode)
-    }
-    var result []Repo
-    if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-        panic(err)
-    }
-    totalCount := 0;
-    c := make(chan int)
-    for _, repo := range result {
-        go countLinesRepo(repo, c)
-    }
-    for _, repo := range result {
-        linesCount := <-c
-        fmt.Printf("%v: %v lines\n", repo.Name, linesCount)
-        totalCount += linesCount
-    }
-    fmt.Println("Total:", totalCount, "lines")
 }
 
 type void struct{}

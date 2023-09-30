@@ -26,3 +26,46 @@ I like programming.
 <img src="https://user-images.githubusercontent.com/101038833/248553937-93748b50-5813-4e87-8154-54457e9b7782.gif" alt="iceland morphs into ireland wow"/>
 </a>
 <br> Look, it morphs
+<br>
+
+Count lines in your github repo:<br>
+<input id="github-lines-input"  placeholder="Username" onkeydown="return isValid(event.key);">
+<button id="github-lines-submit" onclick="countLines()">Submit</button>
+<div id="github-lines-output">
+</div>
+<script>
+
+    var isFetching = false;
+
+    function isValid(ch) {
+        return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '-' || '0' <= ch && ch <= '9'
+    }
+
+    function countLines() {
+        console.log(isFetching)
+        if (isFetching) return
+        isFetching = true;
+        const username = document.getElementById("github-lines-input").value;
+        const outputDiv = document.getElementById("github-lines-output");
+        let img = document.createElement('img');
+        img.src = '/assets/loading.gif'
+        outputDiv.appendChild(img)
+
+        fetch(`/countlines/${username}`)
+          .then((response) => {
+                if (!response.ok) {
+                  throw new Error(`HTTP error: ${response.status}`);
+                }
+                return response.text();
+            }).then((html) => {
+                outputDiv.innerHTML = html
+                isFetching = false;
+            }).catch((err) => {
+                isFetching = false;
+                console.error(`Fetch problem: ${err.message}`)
+                outputDiv.innerHTML = "Server Error"
+            }
+        );
+    }
+</script>
+
