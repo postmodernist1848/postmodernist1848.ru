@@ -26,32 +26,36 @@ I like programming.
 <img src="https://user-images.githubusercontent.com/101038833/248553937-93748b50-5813-4e87-8154-54457e9b7782.gif" alt="iceland morphs into ireland wow"/>
 </a>
 <br> Look, it morphs
-<br>
-
-Count lines in your github repo:<br>
+<hr>
+Count lines in your github repo:
 <input id="github-lines-input"  placeholder="Username" onkeydown="return isValid(event.key);">
 <button id="github-lines-submit" onclick="countLines()">Submit</button>
+<br>Warning: may take some time
+
 <div id="github-lines-output">
 </div>
 <script>
-
-    var isFetching = false;
-
     function isValid(ch) {
-        return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '-' || '0' <= ch && ch <= '9'
+        if (ch === "Enter") {
+            countLines();
+            return false;
+        }
+        return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '-' || '0' <= ch && ch <= '9';
     }
 
+    let controller = null;
+
     function countLines() {
-        console.log(isFetching)
-        if (isFetching) return
-        isFetching = true;
         const username = document.getElementById("github-lines-input").value;
         const outputDiv = document.getElementById("github-lines-output");
         let img = document.createElement('img');
-        img.src = '/assets/loading.gif'
-        outputDiv.appendChild(img)
+        img.src = '/assets/loading.gif';
+        outputDiv.replaceChildren(img);
 
-        fetch(`/countlines/${username}`)
+        controller = new AbortController();
+        fetch(`/countlines/${username}`, {
+            signal: controller.signal
+        })
           .then((response) => {
                 if (!response.ok) {
                   throw new Error(`HTTP error: ${response.status}`);
@@ -59,9 +63,7 @@ Count lines in your github repo:<br>
                 return response.text();
             }).then((html) => {
                 outputDiv.innerHTML = html
-                isFetching = false;
             }).catch((err) => {
-                isFetching = false;
                 console.error(`Fetch problem: ${err.message}`)
                 outputDiv.innerHTML = "Server Error"
             }
