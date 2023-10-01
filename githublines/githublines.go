@@ -2,28 +2,28 @@ package githublines
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-    "crypto/rand"
+	"strings"
 )
-
-const logSkipped = false
 
 type Repo struct {
     Name string `json:"name"`
     FullName string `json:"full_name"`
 }
 
-func countLinesFile(path string) int {
+func countLinesFile(path string) (int, error) {
 
     r, err := os.Open(path)
     if err != nil {
-        panic(err)
+        return 0, err
     }
 
     buf := make([]byte, 32*1024)
@@ -36,10 +36,10 @@ func countLinesFile(path string) int {
 
         switch {
         case err == io.EOF:
-            return count
+            return count, nil
 
         case err != nil:
-            panic(err)
+            return 0, err
         }
     }
 }
@@ -50,20 +50,26 @@ func randomFilename() string {
     return hex.EncodeToString(randBytes)
 }
 
-func CountLinesRepo(repo Repo, c chan int) {
+type RepoData struct {
+    Name string;
+    LineCount int;
+}
+
+func CountLinesRepo(repo Repo, c chan RepoData) {
     url := fmt.Sprintf("https://github.com/%v", repo.FullName)
     dir := randomFilename()
     cmd := exec.Command("git", "clone", "--depth", "1", url, dir)
-    out, err := cmd.CombinedOutput()
+    _, err := cmd.CombinedOutput()
     if err != nil { 
-        fmt.Fprintf(os.Stderr, "%s", out)
-        panic(err)
+        log.Printf("git clone command error: %+v", err)
+        c <- RepoData { repo.Name + " (error)", 0 }
+        return
     }
 
     var linesCount int
 
     err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-        if path == "repo/.git" {
+        if strings.HasSuffix(path, "/.git") {
             return filepath.SkipDir
         }
         if (!d.IsDir()) {
@@ -71,19 +77,24 @@ func CountLinesRepo(repo Repo, c chan int) {
             _, matchedFile := codeFilenames[d.Name()];
             _, matchedExt := codeFiletypes[ext]
             if matchedFile || matchedExt {
-                linesCount += countLinesFile(path)
-            } else if logSkipped {
-                fmt.Println("Skipping:", path)
+                count, err := countLinesFile(path)
+                if err != nil {
+                    log.Printf("countLinesFile error: %+v", err)
+                    return err
+                }
+                linesCount += count
             }
         }
         return nil
     })
     if err != nil {
-        panic(err)
+        log.Printf("Walkdir error: %+v", err)
+        c <- RepoData { repo.Name + " (error)", 0 }
+        return
     }
-
     os.RemoveAll(dir)
-    c <- linesCount
+    c <- RepoData { repo.Name, linesCount }
+
 }
 
 type void struct{}

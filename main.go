@@ -3,14 +3,14 @@ package main
 import (
 	_ "embed"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
-    "fmt"
-    "encoding/json"
     "strings"
+    "fmt"
+    "io"
     "postmodernist1848.ru/githublines"
+    "encoding/json"
 )
 
 //go:embed index.html.tmpl
@@ -58,6 +58,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
+    //TODO: use atomic counting to limit number of simultaneous requests
 
     username := strings.TrimPrefix(r.URL.Path, "/countlines/")
     log.Printf("Handling request. Username: %v", username)
@@ -80,16 +81,16 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, "Failure decoding data from Github")
         return
     }
-    totalCount := 0;
-    c := make(chan int)
+    c := make(chan githublines.RepoData)
     for _, repo := range result {
         go githublines.CountLinesRepo(repo, c)
     }
     io.WriteString(w, "<ul>")
-    for _, repo := range result {
-        linesCount := <-c
-        io.WriteString(w, fmt.Sprintf("<li>%v: %v lines</li>", repo.Name, linesCount))
-        totalCount += linesCount
+    totalCount := 0;
+    for range result {
+        repo := <-c
+        io.WriteString(w, fmt.Sprintf("<li>%v: %v lines</li>", repo.Name, repo.LineCount))
+        totalCount += repo.LineCount
     }
     io.WriteString(w, "<ul>")
     io.WriteString(w, fmt.Sprintf("Total: %v lines", totalCount))
