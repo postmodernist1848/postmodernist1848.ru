@@ -65,19 +65,24 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
     url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
     resp, err := http.Get(url)
     if err != nil {
-        log.Println("GithubLines: HTTP GET error for", username, err.Error())
+        log.Println("GithubLines: HTTP GET error for", username, err)
         io.WriteString(w, "Failure getting data from Github")
         return
     }
     defer resp.Body.Close()
     if resp.StatusCode != http.StatusOK {
-        log.Println("GithubLines: HTTP error for", username, err.Error())
+        bodyBytes, err := io.ReadAll(resp.Body)
+        if (err != nil) {
+            log.Println("GithubLines: HTTP resp not OK for", username, resp.StatusCode)
+        } else {
+            log.Println("GithubLines: HTTP resp not OK for", username, string(bodyBytes))
+        }
         io.WriteString(w, "Failure getting data from Github")
         return
     }
     var result []githublines.Repo
     if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-        log.Println("GithubLines: Decoding error for", username)
+        log.Println("GithubLines: Decoding error for", username, err)
         io.WriteString(w, "Failure decoding data from Github")
         return
     }
