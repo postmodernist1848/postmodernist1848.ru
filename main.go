@@ -20,6 +20,7 @@ var errorContents = []byte("<h1>404: this page does not exist</h1>")
 
 var pathToFile = map[string]string{
 	"/":      "index.html",
+	"/manifesto":  "manifesto.html",
 	"/funi":  "funi.html",
 	"/game":  "game.html",
 	"/log":   "log.html",
