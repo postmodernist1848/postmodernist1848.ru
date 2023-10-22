@@ -11,11 +11,15 @@ import (
     "io"
     "postmodernist1848.ru/githublines"
     "encoding/json"
+    "bytes"
 )
 
 //go:embed index.html.tmpl
 var indexTemplateString string
 var indexTemplate = template.Must(template.New("index").Parse(indexTemplateString))
+//go:embed log.html.tmpl
+var logTemplateString string
+var logTemplate = template.Must(template.New("log").Parse(logTemplateString))
 var errorContents = []byte("<h1>404: this page does not exist</h1>")
 
 var pathToFile = map[string]string{
@@ -65,15 +69,29 @@ func getRawLogHTML() ([]byte, error) {
     return text, nil
 }
 
+func processRawLogHTML(rawHTML []byte) ([]byte, error) {
+    var tpl bytes.Buffer
+	data := map[string]interface{}{
+		"contents": template.HTML(rawHTML),
+	}
+    if err := logTemplate.Execute(&tpl, data); err != nil {
+        return nil, err
+    }
+    return tpl.Bytes(), nil
+}
+
 /* generate html from the pastebin blog */
 func serveLog(w http.ResponseWriter, r *http.Request) {
     //TODO: try goquery
     //TODO: put this in another module
-    logHTML, err := getRawLogHTML()
+    rawLogHTML, err := getRawLogHTML()
     if (err != nil) {
         log.Println(err)
         w.Write(errorContents)
     }
+
+    logHTML, err := processRawLogHTML(rawLogHTML);
+
 	data := map[string]interface{}{
 		"contents": template.HTML(logHTML),
 	}
