@@ -23,7 +23,6 @@ var pathToFile = map[string]string{
 	"/manifesto":  "manifesto.html",
 	"/funi":  "funi.html",
 	"/game":  "game.html",
-	"/log":   "log.html",
 	"/links": "links.html",
 }
 
@@ -47,6 +46,38 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 		"contents": template.HTML(getContents(r.URL.Path)),
 	}
 	err := indexTemplate.ExecuteTemplate(w, "index", data)
+	if err != nil {
+		log.Printf("Failed to execute template on %s", r.URL.Path)
+	}
+}
+
+func getRawLogHTML() ([]byte, error) {
+    const url = "https://pastebin.com/raw/vb43aqyz";
+    resp, err := http.Get(url);
+    if (err != nil) {
+        return nil, err;
+    }
+    defer resp.Body.Close()
+    text, err := io.ReadAll(resp.Body)
+    if (err != nil) {
+        return nil, err;
+    }
+    return text, nil
+}
+
+/* generate html from the pastebin blog */
+func serveLog(w http.ResponseWriter, r *http.Request) {
+    //TODO: try goquery
+    //TODO: put this in another module
+    logHTML, err := getRawLogHTML()
+    if (err != nil) {
+        log.Println(err)
+        w.Write(errorContents)
+    }
+	data := map[string]interface{}{
+		"contents": template.HTML(logHTML),
+	}
+	err = indexTemplate.ExecuteTemplate(w, "index", data)
 	if err != nil {
 		log.Printf("Failed to execute template on %s", r.URL.Path)
 	}
@@ -109,6 +140,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", serveRoot)
+	http.HandleFunc("/log", serveLog)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
     http.HandleFunc("/countlines/", countLinesRepoResponse)
