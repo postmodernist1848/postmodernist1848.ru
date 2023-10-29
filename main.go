@@ -55,6 +55,7 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* fetch the pastebin blog */
 func getRawLogHTML() ([]byte, error) {
     const url = "https://pastebin.com/raw/vb43aqyz";
     resp, err := http.Get(url);
@@ -69,6 +70,7 @@ func getRawLogHTML() ([]byte, error) {
     return text, nil
 }
 
+/* insert into the log template */
 func processRawLogHTML(rawHTML []byte) ([]byte, error) {
     var tpl bytes.Buffer
 	data := map[string]interface{}{
@@ -80,10 +82,7 @@ func processRawLogHTML(rawHTML []byte) ([]byte, error) {
     return tpl.Bytes(), nil
 }
 
-/* generate html from the pastebin blog */
 func serveLog(w http.ResponseWriter, r *http.Request) {
-    //TODO: try goquery
-    //TODO: put this in another module
     rawLogHTML, err := getRawLogHTML()
     if (err != nil) {
         log.Println(err)
