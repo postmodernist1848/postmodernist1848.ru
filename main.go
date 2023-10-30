@@ -12,6 +12,7 @@ import (
     "postmodernist1848.ru/githublines"
     "encoding/json"
     "bytes"
+    "time"
 )
 
 //go:embed index.html.tmpl
@@ -155,6 +156,19 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+    // a hack to keep the server up on a free plan (evil)
+    go func() {
+        for {
+            resp, err := http.Get("https://www.postmodernist1848.ru");
+            if err != nil {
+                log.Println(err);
+            } else {
+                log.Println("request to myself: " + resp.Status);
+            }
+            time.Sleep(13 * time.Minute);
+        }
+    }()
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
