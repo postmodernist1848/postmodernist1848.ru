@@ -122,6 +122,12 @@ footer a {
     color: #2f343f;
 }
 
+#haskell p, b {
+    font-family: "Tahoma";
+    font-size: 0.66rem;
+    line-height: 1.5;
+}
+
 #difficulty-label {
     color: black; 
     font-size: 1rem; 
