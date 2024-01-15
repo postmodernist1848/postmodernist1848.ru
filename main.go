@@ -151,10 +151,8 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+    http_port := "80"
+    https_port := "443"
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
@@ -162,6 +160,11 @@ func main() {
 	http.HandleFunc("/assets/", serveStaticFile)
     http.HandleFunc("/countlines/", countLinesRepoResponse)
 
-	log.Println("listening on", port)
-	log.Fatal(http.ListenAndServeTLS(":443", "server.crt", "server.key", nil))
+	log.Println("listening for http on", http_port)
+	go func() {
+        log.Fatal(http.ListenAndServe(":"+http_port, nil))
+    }()
+
+	log.Println("listening for https on", https_port)
+    log.Fatal(http.ListenAndServeTLS(":"+https_port, "server.crt", "server.key", nil))
 }
