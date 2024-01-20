@@ -9,15 +9,24 @@ jobs:
     steps:
     - name: Deploy using ssh
       uses: appleboy/ssh-action@master
+      env:
+        SERVER_KEY: ${{ secrets.SERVER_KEY }}
+        SERVER_CRT: ${{ secrets.SERVER_CRT }}
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.PRIVATE_KEY }}
+        envs: SERVER_KEY, SERVER_CRT,
         script: |
-          if cd ~/postmodernist1848.ru; then
+          if [ -d ~/postmodernist1848.ru ]
+          then
+            cd ~/postmodernist1848.ru
             git pull
           else
-            git clone git@github.com:postmodernist1848/postmodernist1848.ru && cd ~/postmodernist1848.ru
+            git clone git@github.com:postmodernist1848/postmodernist1848.ru
+            cd ~/postmodernist1848.ru
+            echo "$SERVER_CRT" > server.crt
+            echo "$SERVER_KEY" > server.key
           fi
           ./deploy.sh
 
