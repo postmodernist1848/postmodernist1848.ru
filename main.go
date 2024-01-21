@@ -2,16 +2,20 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"postmodernist1848.ru/githublines"
 	"strings"
+	"syscall"
 )
 
 //go:embed index.html.tmpl
@@ -159,15 +163,22 @@ type ChatMessage struct {
 	Text   string `json:"text"`
 }
 
-var messages []ChatMessage
-
 func serveChatMessages(w http.ResponseWriter, r *http.Request) {
+	row, err := database.Query("SELECT * FROM message ORDER BY id")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer row.Close()
 	w.Write([]byte("<ul style=\"list-style: none\">"))
-	for _, msg := range messages {
+	for row.Next() {
+		var id int
+		var author string
+		var text string
+		row.Scan(&id, &author, &text)
 		w.Write([]byte("<li>"))
-		w.Write([]byte(msg.Author))
+		w.Write([]byte(author))
 		w.Write([]byte(": "))
-		w.Write([]byte(msg.Text))
+		w.Write([]byte(text))
 		w.Write([]byte("</li>"))
 	}
 	w.Write([]byte("</ul>"))
@@ -182,8 +193,20 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Received message: ", msg)
-	messages = append(messages, msg)
+	insertChatMessage(database, msg)
 }
+
+func insertChatMessage(db *sql.DB, message ChatMessage) error {
+	insertStudentSQL := `INSERT INTO message(author, text) VALUES (?, ?)`
+	statement, err := db.Prepare(insertStudentSQL)
+	if err != nil {
+		return err
+	}
+	_, err = statement.Exec(message.Author, message.Text)
+	return err
+}
+
+var database *sql.DB
 
 func main() {
 	http_port := "80"
@@ -196,6 +219,31 @@ func main() {
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
 	http.HandleFunc("/countlines/", countLinesRepoResponse)
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigs
+		err := database.Close()
+		if err != nil {
+			log.Println("Failed to close database")
+			os.Exit(137)
+		}
+		log.Println("Successfully closed the database")
+		switch sig {
+		case os.Interrupt:
+			os.Exit(130)
+		case syscall.SIGTERM:
+			os.Exit(143)
+		}
+	}()
+
+	var err error
+	database, err = sql.Open("sqlite3", "database.db")
+	defer log.Println("Triggered defer in main")
+	if err != nil {
+		log.Fatal("Failed to open sqlite database: ", err)
+	}
 
 	log.Println("listening for http on", http_port)
 	go func() {
