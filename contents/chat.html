@@ -3,8 +3,11 @@
 <input id="chat-input" placeholder="Enter message..." onkeydown="return handleInput(this);">
 <style>
 #chat-window {
+    margin-top: 20px;
+    margin-bottom: 20px;
     overflow-x: hidden;
     overflow-y: auto;
+    height: 80vh;
     border: solid;
 }
 </style>
@@ -14,11 +17,12 @@
     const chatWindow = document.getElementById("chat-window");
     setTimeout(() => {
         username = prompt("Enter your username")
-        updateChat();
+        updateChat(true);
         setInterval(updateChat, 7000);
     }, 10)
 
-    function updateChat() {
+
+    function updateChat(scroll=false) {
         fetch("/chat/messages").then((response) => {
                 if (!response.ok) {
                     throw new Error(`HTTP error: ${response.status}`);
@@ -26,6 +30,7 @@
                 return response.text();
             }).then((html) => {
             chatWindow.innerHTML = html
+            if (scroll) chatWindow.scrollTop = chatWindow.scrollHeight;
         }).catch((err) => {
                 console.error(`Fetch problem: ${err.message}`)
                 chatWindow.innerHTML = "Server Error"
@@ -42,13 +47,15 @@
             },
             body: JSON.stringify({ author: username, text: text}),
         });
-        updateChat()
     }
 
     function handleInput(el) {
         if (event.key === "Enter") {
-            sendMessage(el.value)
-            el.value = "";
+            if (el.value !== "") {
+                sendMessage(el.value)
+                updateChat(true)
+                el.value = "";
+            }
             return false;
         }
         return event.key >= 'a' && event.key <= 'z' || event.key >= 'A' && event.key <= 'Z' || event.key === '_' || '0' <= event.key && event.key <= '9';
