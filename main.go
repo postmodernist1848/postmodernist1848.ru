@@ -197,8 +197,8 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func insertChatMessage(db *sql.DB, message ChatMessage) error {
-	insertStudentSQL := `INSERT INTO message(author, text) VALUES (?, ?)`
-	statement, err := db.Prepare(insertStudentSQL)
+	query := `INSERT INTO message(author, text) VALUES (?, ?)`
+	statement, err := db.Prepare(query)
 	if err != nil {
 		return err
 	}
