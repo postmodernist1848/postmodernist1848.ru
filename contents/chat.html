@@ -12,15 +12,20 @@
 }
 </style>
 <script>
-
-    let username = "Anon";
+    let username;
     const chatWindow = document.getElementById("chat-window");
     setTimeout(() => {
-        username = prompt("Enter your username")
         updateChat(true);
+        askUsername();
         setInterval(updateChat, 7000);
     }, 10)
 
+    function askUsername() {
+        username = prompt("Enter your username")
+        if (!username) {
+            username = "Anon"
+        }
+    }
 
     function updateChat(scroll=false) {
         fetch("/chat/messages").then((response) => {
@@ -41,7 +46,7 @@
 
     function sendMessage(text) {
         fetch("/chat/send", {
-            method: "POST", // *GET, POST, PUT, DELETE, etc.
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
