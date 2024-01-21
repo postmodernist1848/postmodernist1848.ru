@@ -25,10 +25,12 @@ var errorContents = []byte("<h1>404: this page does not exist</h1>")
 
 var pathToFile = map[string]string{
 	"/":          "index.html",
-	"/manifesto": "manifesto.html",
 	"/funi":      "funi.html",
 	"/game":      "game.html",
 	"/chat":      "chat.html",
+	"/articles":  "articles.html",
+	"/manifesto": "manifesto.html",
+	"/haskell":   "haskell.html",
 	"/links":     "links.html",
 }
 
@@ -189,8 +191,8 @@ func main() {
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
-	http.HandleFunc("/chat/messages", serveChatMessages)
-	http.HandleFunc("/chat/send", chatSendHandler)
+	http.HandleFunc("/api/chat-messages", serveChatMessages)
+	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
 	http.HandleFunc("/countlines/", countLinesRepoResponse)
