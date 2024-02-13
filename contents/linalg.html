@@ -49,7 +49,16 @@
     const indicesCountElement = document.getElementById('indices-count')
     const dimensionsElement = document.getElementById('dimensions')
     function selectIndexCount(idx) {
-        document.getElementById("indices").innerHTML = "ijklm".substring(0, idx)
+        const indicesstr = "ijklm"
+        document.getElementById("indices").innerHTML = indicesstr.substring(0, idx)
+        for (let i = 0; i < indicesstr.length; i++) {
+            if (idx >= i + 1) {
+                document.getElementById(indicesstr[i]).style.display = ""
+                document.getElementById(indicesstr[i]).checked = false
+            } else {
+                document.getElementById(indicesstr[i]).style.display = "none"
+            }
+        }
         updateTable()
     }
 
@@ -179,6 +188,7 @@
         textOutput += "]"
         document.getElementById('text-output').value = textOutput
     }
+    selectIndexCount(2)
     updateTable()
 
     const perms = [
