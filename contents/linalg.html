@@ -43,6 +43,7 @@
 
 <table id="output-table" style="border: 1px solid">
 </table>
+<input readonly="readonly" id="text-output">
 
 <script>
     const indicesCountElement = document.getElementById('indices-count')
@@ -145,8 +146,10 @@
         let superlayers = indicesCount >= 5 ? dimensions : 1
 
         let html = ""
+        let matrix = []
         for (let l = 0; l < sections; l++) {
             for (let i = 0; i < rows; i++) {
+                let row = []
                 html += "<tr>"
                 for (let m = 0; m < superlayers; m++) {
                     for (let k = 0; k < layers; k++) {
@@ -154,16 +157,27 @@
                             html += "<td>"
                             console.log("calculating for ", i, j, k, l, m)
                             const res = calculateijklm(dimensions, toPerm, i, j, k, l, m, indicesCount, alt)
+                            row.push(res)
                             console.log(res)
                             html += res
                             html += "</td>"
                         }
                     }
                 }
+                matrix.push(row)
                 html += "</tr>"
             }
         }
         document.getElementById('output-table').innerHTML = html
+        textOutput = "["
+        matrix.forEach((row, index) => {
+            textOutput += row.toString()
+            if (index + 1 !== matrix.length) {
+                textOutput += ';'
+            }
+        })
+        textOutput += "]"
+        document.getElementById('text-output').value = textOutput
     }
     updateTable()
 
