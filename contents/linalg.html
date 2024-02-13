@@ -34,6 +34,7 @@
         <input type="checkbox" name="indices" id="l">l</input>
         <input type="checkbox" name="indices" id="m">m</input>
     </div>
+    <input type="checkbox" id="rounding-checkbox">rounding</input>
 </fieldset>
 
 <table id="input-table">
@@ -124,6 +125,7 @@
         console.log(alt)
         const dimensions = dimensionsElement.value
         const indicesCount = indicesCountElement.value
+        const rounding = document.getElementById('rounding-checkbox').checked
         const checkedBoxes = document.querySelectorAll('input[name=indices]:checked');
         let toPerm = []
         checkedBoxes.forEach((checkbox) => {
@@ -165,7 +167,10 @@
                         for (let j = 0; j < cols; j++) {
                             html += "<td>"
                             console.log("calculating for ", i, j, k, l, m)
-                            const res = calculateijklm(dimensions, toPerm, i, j, k, l, m, indicesCount, alt)
+                            let res = calculateijklm(dimensions, toPerm, i, j, k, l, m, indicesCount, alt)
+                            if (rounding) {
+                                res = Math.round(res * 100) / 100
+                            }
                             row.push(res)
                             console.log(res)
                             html += res
