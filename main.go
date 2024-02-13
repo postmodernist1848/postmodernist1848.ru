@@ -36,6 +36,7 @@ var pathToFile = map[string]string{
 	"/manifesto": "manifesto.html",
 	"/haskell":   "haskell.html",
 	"/links":     "links.html",
+	"/linalg":    "linalg.html",
 }
 
 func getContents(path string) []byte {
@@ -238,18 +239,18 @@ func main() {
 		}
 	}()
 
+	log.Println("Opening database...")
 	var err error
 	database, err = sql.Open("sqlite3", "database.db")
-	defer log.Println("Triggered defer in main")
 	if err != nil {
 		log.Fatal("Failed to open sqlite database: ", err)
 	}
 
-	log.Println("listening for http on", http_port)
+	log.Println("Listening for http on", http_port)
 	go func() {
 		log.Fatal(http.ListenAndServe(":"+http_port, nil))
 	}()
 
-	log.Println("listening for https on", https_port)
+	log.Println("Listening for https on", https_port)
 	log.Fatal(http.ListenAndServeTLS(":"+https_port, "server.crt", "server.key", nil))
 }

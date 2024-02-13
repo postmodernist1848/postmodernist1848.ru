@@ -23,8 +23,7 @@ span, div {
     z-index: 1;
 }
 
-
-label {
+.checkbox-with-text label {
     font-size: 0.3em;
     color: white;
     display: block;
@@ -197,6 +196,14 @@ footer a {
     border: dashed;
     border-radius: 10px;
     border-color: gray;
+}
+
+td input {
+    width: 100px;
+}
+td {
+    text-align: center;
+    width: 100px;
 }
 
 @media screen and (max-width: 700px) {
