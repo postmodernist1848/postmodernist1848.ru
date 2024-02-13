@@ -141,7 +141,7 @@
             let value = lookup(...newIndices)
             sumOfAllPerms += (alt && (idx + 3) % 4 <= 1) ? -value : value
         })
-        return sumOfAllPerms / factorial[indicesCount]
+        return sumOfAllPerms / factorial[toPerm.length]
     }
 
     function calculate() {
