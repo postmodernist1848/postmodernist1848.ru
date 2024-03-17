@@ -1,4 +1,3 @@
-<div id="hint">HINT: You can tap the dates to show/hide notes.</div>
 <div id="paste">
     {{.contents}}
 </div>
@@ -39,4 +38,6 @@
             content.classList.toggle('hidden');
         });
     }
+    h5s[h5s.length - 1].scrollIntoView();
 </script>
+<div id="hint">HINT: You can tap the dates to show/hide notes.</div>
