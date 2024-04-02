@@ -5,17 +5,19 @@ import (
 	"database/sql"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"postmodernist1848.ru/githublines"
 	"strings"
 	"syscall"
+
+	_ "github.com/mattn/go-sqlite3"
+	"postmodernist1848.ru/githublines"
 )
 
 //go:embed index.html.tmpl
@@ -39,27 +41,33 @@ var pathToFile = map[string]string{
 	"/linalg":    "linalg.html",
 }
 
-func getContents(path string) []byte {
+func getContents(path string) ([]byte, error) {
 	requestedPage, ok := pathToFile[path]
 	if !ok {
 		log.Printf("Not in list: `%s`", path)
-		return errorContents
+		return nil, errors.New(fmt.Sprintf("Not in list: `%s`", path))
 	}
 	filepath := "contents/" + requestedPage
 	content, err := os.ReadFile(filepath)
 	if err != nil {
 		log.Printf("Failed to read: `%s`", filepath)
-		content = errorContents
+		return nil, err
 	}
-	return content
+	return content, nil
 }
 
 func serveRoot(w http.ResponseWriter, r *http.Request) {
+    contents, err := getContents(r.URL.Path);
+    if err != nil {
+        contents = errorContents
+        w.WriteHeader(http.StatusNotFound)
+    }
 	data := map[string]interface{}{
-		"contents": template.HTML(getContents(r.URL.Path)),
+		"contents": template.HTML(contents),
 	}
-	err := indexTemplate.ExecuteTemplate(w, "index", data)
+	err = indexTemplate.ExecuteTemplate(w, "index", data)
 	if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Failed to execute template on %s", r.URL.Path)
 	}
 }
@@ -96,9 +104,14 @@ func serveLog(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.Write(errorContents)
+        w.WriteHeader(http.StatusServiceUnavailable)
 	}
 
 	logHTML, err := processRawLogHTML(rawLogHTML)
+    if err != nil {
+		log.Printf("Failed to process /log HTML")
+        w.WriteHeader(http.StatusInternalServerError)
+    }
 
 	data := map[string]interface{}{
 		"contents": template.HTML(logHTML),
@@ -106,6 +119,7 @@ func serveLog(w http.ResponseWriter, r *http.Request) {
 	err = indexTemplate.ExecuteTemplate(w, "index", data)
 	if err != nil {
 		log.Printf("Failed to execute template on %s", r.URL.Path)
+        w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -119,7 +133,7 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
 	//TODO: use atomic counting to limit number of simultaneous requests
 
 	username := strings.TrimPrefix(r.URL.Path, "/countlines/")
-	log.Printf("Handling request. Username: %v", username)
+	log.Printf("Handling countlines/ request. Username: %v", username)
 	url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
 	resp, err := http.Get(url)
 	if err != nil {
