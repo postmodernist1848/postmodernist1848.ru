@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 )
 
 type Repo struct {
@@ -61,7 +64,7 @@ func CountLinesRepo(repo Repo, c chan RepoData) {
     cmd := exec.Command("git", "clone", "--depth", "1", url, dir)
     out, err := cmd.CombinedOutput()
     if err != nil { 
-        log.Printf("git clone command error: %+v", err)
+        log.Printf("GithubLines: git clone command error: %+v", err)
         log.Printf(string(out))
         c <- RepoData { repo.Name + " (error)", 0 }
         return
@@ -97,6 +100,61 @@ func CountLinesRepo(repo Repo, c chan RepoData) {
     c <- RepoData { repo.Name, linesCount }
 
 }
+
+const countlines_requests_limit = 5
+var countlines_current_requests atomic.Int32
+
+func ServeCountlines(w http.ResponseWriter, r *http.Request) {
+
+    if countlines_current_requests.Load() >= countlines_requests_limit {
+        io.WriteString(w, "Too many requests are being processed currently. Try later")
+        return
+    }
+    countlines_current_requests.Add(1)
+    defer countlines_current_requests.Add(-1)
+
+	username := strings.TrimPrefix(r.URL.Path, "/countlines/")
+	log.Printf("Handling countlines/ request. Username: %v", username)
+	url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Println("GithubLines: HTTP GET error for", username, err)
+		io.WriteString(w, "Failure getting data from Github")
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("GithubLines: HTTP resp not OK for", username, resp.StatusCode)
+		} else {
+			log.Println("GithubLines: HTTP resp not OK for", username, string(bodyBytes))
+		}
+		io.WriteString(w, "Failure getting data from Github")
+		return
+	}
+	var result []Repo
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		log.Println("GithubLines: Decoding error for", username, err)
+		io.WriteString(w, "Failure decoding data from Github")
+		return
+	}
+	c := make(chan RepoData)
+	for _, repo := range result {
+		go CountLinesRepo(repo, c)
+	}
+	io.WriteString(w, "<ul>")
+	totalCount := 0
+	for range result {
+		repo := <-c
+		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
+		totalCount += repo.LineCount
+	}
+	io.WriteString(w, "<ul>")
+	fmt.Fprintf(w, "Total: %v lines", totalCount)
+
+}
+
 
 type void struct{}
 

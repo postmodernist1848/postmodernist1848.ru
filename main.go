@@ -13,8 +13,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
-	"sync/atomic"
 	"syscall"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -57,18 +55,20 @@ func getContents(path string) ([]byte, error) {
 	return content, nil
 }
 
+/* the default is getting a file path from map and
+ * inserting its contents into the index template */
 func serveRoot(w http.ResponseWriter, r *http.Request) {
-    contents, err := getContents(r.URL.Path);
-    if err != nil {
-        contents = errorContents
-        w.WriteHeader(http.StatusNotFound)
-    }
+	contents, err := getContents(r.URL.Path)
+	if err != nil {
+		contents = errorContents
+		w.WriteHeader(http.StatusNotFound)
+	}
 	data := map[string]interface{}{
 		"contents": template.HTML(contents),
 	}
 	err = indexTemplate.ExecuteTemplate(w, "index", data)
 	if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Failed to execute template on %s", r.URL.Path)
 	}
 }
@@ -100,19 +100,22 @@ func processRawLogHTML(rawHTML []byte) ([]byte, error) {
 	return tpl.Bytes(), nil
 }
 
+/* log gets data from pastebin and inserts into the template
+ * which adds some interactive elements with js
+ */
 func serveLog(w http.ResponseWriter, r *http.Request) {
 	rawLogHTML, err := getRawLogHTML()
 	if err != nil {
 		log.Println(err)
 		w.Write(errorContents)
-        w.WriteHeader(http.StatusServiceUnavailable)
+		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 
 	logHTML, err := processRawLogHTML(rawLogHTML)
-    if err != nil {
+	if err != nil {
 		log.Printf("Failed to process /log HTML")
-        w.WriteHeader(http.StatusInternalServerError)
-    }
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 
 	data := map[string]interface{}{
 		"contents": template.HTML(logHTML),
@@ -120,7 +123,7 @@ func serveLog(w http.ResponseWriter, r *http.Request) {
 	err = indexTemplate.ExecuteTemplate(w, "index", data)
 	if err != nil {
 		log.Printf("Failed to execute template on %s", r.URL.Path)
-        w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
@@ -128,60 +131,6 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request) {
 	// Extract the requested file path from the URL
 	filePath := "." + r.URL.Path
 	http.ServeFile(w, r, filePath)
-}
-
-const countlines_requests_limit = 5
-var countlines_current_requests atomic.Int32
-
-func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
-
-    if countlines_current_requests.Load() >= countlines_requests_limit {
-        io.WriteString(w, "Too many requests are being processed currently. Try later")
-        return
-    }
-    countlines_current_requests.Add(1)
-    defer countlines_current_requests.Add(-1)
-
-	username := strings.TrimPrefix(r.URL.Path, "/countlines/")
-	log.Printf("Handling countlines/ request. Username: %v", username)
-	url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Println("GithubLines: HTTP GET error for", username, err)
-		io.WriteString(w, "Failure getting data from Github")
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("GithubLines: HTTP resp not OK for", username, resp.StatusCode)
-		} else {
-			log.Println("GithubLines: HTTP resp not OK for", username, string(bodyBytes))
-		}
-		io.WriteString(w, "Failure getting data from Github")
-		return
-	}
-	var result []githublines.Repo
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Println("GithubLines: Decoding error for", username, err)
-		io.WriteString(w, "Failure decoding data from Github")
-		return
-	}
-	c := make(chan githublines.RepoData)
-	for _, repo := range result {
-		go githublines.CountLinesRepo(repo, c)
-	}
-	io.WriteString(w, "<ul>")
-	totalCount := 0
-	for range result {
-		repo := <-c
-		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
-		totalCount += repo.LineCount
-	}
-	io.WriteString(w, "<ul>")
-	fmt.Fprintf(w, "Total: %v lines", totalCount)
-
 }
 
 type ChatMessage struct {
@@ -215,7 +164,7 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&msg)
 	if err != nil {
 		log.Println("failed to parse message: ", err)
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 	log.Println("Received message: ", msg)
@@ -244,7 +193,7 @@ func main() {
 	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
-	http.HandleFunc("/countlines/", countLinesRepoResponse)
+	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
