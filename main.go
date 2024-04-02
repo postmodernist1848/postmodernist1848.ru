@@ -139,8 +139,9 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, "Too many requests are being processed currently. Try later")
         return
     }
-
     countlines_current_requests.Add(1)
+    defer countlines_current_requests.Add(-1)
+
 	username := strings.TrimPrefix(r.URL.Path, "/countlines/")
 	log.Printf("Handling countlines/ request. Username: %v", username)
 	url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
@@ -181,7 +182,6 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "<ul>")
 	fmt.Fprintf(w, "Total: %v lines", totalCount)
 
-    countlines_current_requests.Add(-1)
 }
 
 type ChatMessage struct {
