@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -129,9 +130,17 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filePath)
 }
 
-func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
-	//TODO: use atomic counting to limit number of simultaneous requests
+const countlines_requests_limit = 5
+var countlines_current_requests atomic.Int32
 
+func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
+
+    if countlines_current_requests.Load() >= countlines_requests_limit {
+        io.WriteString(w, "Too many requests are being processed currently. Try later")
+        return
+    }
+
+    countlines_current_requests.Add(1)
 	username := strings.TrimPrefix(r.URL.Path, "/countlines/")
 	log.Printf("Handling countlines/ request. Username: %v", username)
 	url := fmt.Sprintf("https://api.github.com/users/%v/repos", username)
@@ -166,11 +175,13 @@ func countLinesRepoResponse(w http.ResponseWriter, r *http.Request) {
 	totalCount := 0
 	for range result {
 		repo := <-c
-		io.WriteString(w, fmt.Sprintf("<li>%v: %v lines</li>", repo.Name, repo.LineCount))
+		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
 		totalCount += repo.LineCount
 	}
 	io.WriteString(w, "<ul>")
-	io.WriteString(w, fmt.Sprintf("Total: %v lines", totalCount))
+	fmt.Fprintf(w, "Total: %v lines", totalCount)
+
+    countlines_current_requests.Add(-1)
 }
 
 type ChatMessage struct {

@@ -59,9 +59,10 @@ func CountLinesRepo(repo Repo, c chan RepoData) {
     url := fmt.Sprintf("https://github.com/%v", repo.FullName)
     dir := randomFilename()
     cmd := exec.Command("git", "clone", "--depth", "1", url, dir)
-    _, err := cmd.CombinedOutput()
+    out, err := cmd.CombinedOutput()
     if err != nil { 
         log.Printf("git clone command error: %+v", err)
+        log.Printf(string(out))
         c <- RepoData { repo.Name + " (error)", 0 }
         return
     }
