@@ -1,6 +1,10 @@
 set -e
-RUNNING=$(docker ps --filter ancestor=postmodernist1848.ru-server:latest --format="{{.ID}}")
+
 docker build -t 'postmodernist1848.ru-server:latest' .
-[ -n "$RUNNING" ] && echo "Stopping active server instance $RUNNING" && docker stop $RUNNING
-docker run --detach -p 80:80 -p 443:443 --rm -v /root/database.db:/database.db postmodernist1848.ru-server:latest
+
+if [ "$(docker ps -q -f name=server-instance)" ]; then
+    docker stop server-instance
+fi
+docker run --name server-instance --detach -p 80:80 -p 443:443 --rm -v /root/database.db:/database.db postmodernist1848.ru-server:latest
+docker logs -f server-instance &> server.log &
 docker image prune -f
