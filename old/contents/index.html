@@ -11,11 +11,11 @@
 On my websit u can:
 <ul style="list-style-position: inside; margin-top: 0">
     <li>learn a bit about me</li>
-    <li>look at some <a href="/funi">programming memes</a></li>
-    <li>play a <a href="/game">typing game</a></li>
-    <li>talk with someone in an <a href="/chat">anonymous chat hosted by me</a></li>
-    <li>see if i've posted any <a href="/articles">writings</a></li>
-    <li>read <a href="/log">my pseudophilosophical journal</a></li>
+    <li>look at some <a href="/old/funi">programming memes</a></li>
+    <li>play a <a href="/old/game">typing game</a></li>
+    <li>talk with someone in an <a href="/old/chat">anonymous chat hosted by me</a></li>
+    <li>see if i've posted any <a href="/old/articles">writings</a></li>
+    <li>read <a href="/old/log">my pseudophilosophical journal</a></li>
     <li>and more</li>
 </ul>
 
@@ -68,7 +68,7 @@ Count lines in your github repo:
         outputDiv.replaceChildren(img);
 
         controller = new AbortController();
-        fetch(`/countlines/${username}`, {
+        fetch(`/api/countlines/${username}`, {
             signal: controller.signal
         })
           .then((response) => {

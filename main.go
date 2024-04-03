@@ -17,6 +17,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"postmodernist1848.ru/githublines"
+	"postmodernist1848.ru/old"
 )
 
 //go:embed index.html.tmpl
@@ -29,7 +30,6 @@ var logTemplate = template.Must(template.New("log").Parse(logTemplateString))
 var errorContents = []byte("<h1>404: this page does not exist</h1>")
 
 var pathToFile = map[string]string{
-	"/":          "index.html",
 	"/funi":      "funi.html",
 	"/game":      "game.html",
 	"/chat":      "chat.html",
@@ -132,6 +132,7 @@ func serveLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request) {
+    log.Printf("Requested file .%s", r.URL.Path)
 	// Extract the requested file path from the URL
 	filePath := "." + r.URL.Path
 	http.ServeFile(w, r, filePath)
@@ -199,6 +200,12 @@ func main() {
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
 	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
+
+    // old uses current /api
+	http.HandleFunc("/old/", old.ServeRoot)
+	http.HandleFunc("/old/log", old.ServeLog)
+	http.HandleFunc("/old/static/", serveStaticFile)
+	http.HandleFunc("/old/assets/", old.ServeStaticFile)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
