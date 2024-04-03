@@ -132,7 +132,6 @@ func serveLog(w http.ResponseWriter, r *http.Request) {
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request) {
-    log.Printf("Requested file .%s", r.URL.Path)
 	// Extract the requested file path from the URL
 	filePath := "." + r.URL.Path
 	http.ServeFile(w, r, filePath)

@@ -15,8 +15,6 @@ var particles;
 var score = 0.0;
 var highscore = 0.0;
 
-//TODO: score
-
 window.addEventListener('load', onPageLoad);
 
 function random_word() {
