@@ -1,0 +1,90 @@
+/* main */
+
+body {
+    overflow-y: hidden;
+}
+
+#container {
+    position: relative;
+    width: fit-content;
+    display: block;
+    margin: 0 auto;
+}
+
+#description-box {
+    font-size: 2lvh;
+    padding: 5px;
+    display: none;
+    position: relative;
+    left: 0;
+    top: 0;
+    vertical-align: center;
+    line-height: 1;
+    height: fit-content;
+    width: fit-content;
+}
+
+#description-box::after {
+    content: '';
+    min-height: 1em;
+    border-right: 3px solid;
+}
+
+#descbox-container {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+    position: absolute;
+    left: 80%;
+    top: 80%;
+    border: 3px solid #5f9ee0;
+    border-radius: 10px;
+    width: 50%;
+}
+
+.menu-text-element:hover {
+    padding-left: 4lvh;
+    cursor: pointer;
+}
+
+.menu-text-element {
+    font-size: 6.299212598425197lvh;
+    user-select: none;
+    transition: padding 0.5s ease-in-out;
+    line-height: 1.5;
+}
+
+#menu {
+    transform: rotate(29.8deg);
+    transform-origin: top left;
+    position: absolute;
+    left: 66%;
+    top: 47%;
+}
+
+.floating-text {
+    text-align: center;
+    user-select: none;
+    transform: rotate(29.8deg);
+    font-size: 3.3lvh;
+    position: absolute;
+    font-weight: 600;
+}
+
+#programming {
+    left: 6.3%;
+    top: 7.8%;
+}
+#CS {
+    left: 72.5%;
+    top: 42%;
+}
+#philosophy {
+    left: 6.5%;
+    top: 38%;
+}
+
+#menu-background {
+    user-select: none;
+    height: 100lvh;
+}
+

@@ -1,23 +1,111 @@
+/* common */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+body {
+    background-color: #181818;
+}
+
 html, body {
     margin: 0;
     padding: 0;
-}
-span, div {
-    font-size: unset
+    width: 100%;
+    height: 100%;
 }
 
-#sidebar {
-    width: 15%;
-    height: 100%;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: #2f343f; 
-    padding-right: 1%;
-    padding-left: 1%;
-    z-index: 0;
-    transition: transform 0.5s cubic-bezier(0.77,0.2,0.05,1.0);
+
+#contents {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+
+article {
+    width: 1000px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#navbar {
+}
+
+fieldset {
+    opacity: 80%;
+}
+
+#navbar-links {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1%;
+}
+
+#navbar-links a:hover {
+    opacity: 100%;
+}
+
+#navbar-links a {
+    transition: opacity 0.3s ease-out;
+    opacity: 50%;
+    border-bottom: 1px solid white;
+    text-decoration: none;
+}
+
+* {
+    font-family: "Poppins", sans-serif;
+    font-size: 20pt;
+    color: white;
+}
+
+#contents {
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+footer {
+    position: static;
+    text-align: right;
+    margin-right: 1em;
+}
+
+@media screen and (max-width: 1300px) {
+    #navbar {
+        flex-direction: column;
+    }
+    #navbar-links {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+hr {
+    flex-grow: 1;
+}
+
+button {
+    background-color: #181818;
+    color: white;
+    font-weight: 300;
+}
+
+select {
+    color: #181818;
+}
+
+.hljs-keyword {
+    color: black;
+}
+
+input {
+    accent-color: black;
+    color: #181818;
+    background: lightgray;
+}
+
+/*
 
 .checkbox-with-text {
     z-index: 1;
@@ -56,26 +144,11 @@ img {
   background-image: linear-gradient(rgb(0 0 0/20%) 0 0);
 }
 
-#contents {
-    padding-left: 20px;
-    padding-right: 20px;
-    margin-left: 17%;
-}
-
 #my-websit {
     color: lightgray;
     text-align: center;
     padding-bottom: 5%;
     margin-top: 20%
-}
-
-footer {
-    position: static;
-    bottom: 0;
-    right: 0;
-    text-align: right;
-    font-size: 0.5rem;
-    padding: 10px;
 }
 
 #restart-game {
@@ -87,7 +160,7 @@ footer {
 progress {
     display: block;
     margin-bottom: 10px;
-    border-radius: 7px; 
+    border-radius: 7px;
     height: 22px;
     box-shadow: 1px 1px 4px rgba( 0, 0, 0, 0.2 );
 }
@@ -128,11 +201,11 @@ footer a {
 }
 
 #difficulty-label {
-    color: black; 
-    font-size: 1rem; 
-    position: absolute; 
-    top: 20px; 
-    right: 20px; 
+    color: black;
+    font-size: 1rem;
+    position: absolute;
+    top: 20px;
+    right: 20px;
     text-align: right
 }
 
@@ -242,3 +315,4 @@ td {
     }
 
 }
+ */

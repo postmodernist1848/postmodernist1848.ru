@@ -51,18 +51,12 @@ function wrap_text_in_spans(element) {
 
 
 window.onload = () => {
-    const sidebar_checkbox = document.getElementById('sidebar-toggle');
-    const sidebar = document.getElementById('sidebar');
     const rainbow_checkbox = document.getElementById('rainbow-toggle');
 
     if (localStorage.getItem("rainbowEnabled") == "true") {
         rainbow_checkbox.checked = true;
         rainbowize_contents();
     }
-
-    sidebar_checkbox.addEventListener('change', () => {
-        sidebar.style.transform = sidebar_checkbox.checked ? 'translate(-100%, 0)' : 'none';
-    });
 
     rainbow_checkbox.addEventListener('change', () => {
         if (rainbow_checkbox.checked) {

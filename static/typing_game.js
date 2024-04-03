@@ -14,7 +14,6 @@ var circles;
 var particles;
 var score = 0.0;
 var highscore = 0.0;
-ctx.fillStyle = "red";
 
 //TODO: score
 
@@ -101,7 +100,7 @@ class Circle {
 var player = new Circle(canvas.width / 2, canvas.height * 0.9, 50, 0, "you", 0x00ff00);
 
 function valid(ch) {
-    return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '-';
+    return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch === '-';
 }
 
 var time_til_next_circle = 1.0;
@@ -116,7 +115,7 @@ function spawn_circle() {
             word.length * 5 + 10,
             80 - word.length * 5, 
             word, 
-            rainbowCheckbox.checked ? getRandomColorNumber(): 0xff0000
+            rainbowCheckbox.checked ? getRandomColorNumber(): 0x990000
         )
     );
 }
@@ -220,8 +219,8 @@ function draw() {
     }
 
     ctx.textAlign = "left"
-    ctx.fillStyle = "black"
-    ctx.font = "20px sans-serif";
+    ctx.fillStyle = "white"
+    ctx.font = "20px serif";
     ctx.fillText(`Score: ${score}`, 0, 20);
     ctx.fillText(`Highcore: ${highscore}`, 0, 40);
 

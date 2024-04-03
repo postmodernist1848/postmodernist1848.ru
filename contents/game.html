@@ -1,11 +1,9 @@
-<style>
-    span {
-        font-size: 1000%;
-    }
-</style>
-<label for="difficulty-slider" id="difficulty-label">Difficulty:</label>
-<input type="range" min="1" max="4" value="1" id="difficulty-slider">
-<button style="position: absolute; top: 150px; margin-right: 20px" id="restart-game" onclick="start_game()">Restart</button>
+<div style="display: flex; flex-direction: row; align-content: center; gap: 10px">
+    <label for="difficulty-slider" id="difficulty-label">Difficulty:</label>
+    <input type="range" min="1" max="4" value="1" id="difficulty-slider">
+
+    <button id="restart-game" onclick="start_game()">Restart</button>
+</div>
 <canvas width=1000 height=800>
     typing game
 </canvas>

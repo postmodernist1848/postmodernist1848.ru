@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="/static/common.css">
+        <link rel="stylesheet" href="/static/index.css">
+        <title>postmodernist1848 personal website</title>
+        <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script>
+            let descBox;
+            let timer;
+            function drawDesc() {
+                descBox.targetText = {
+                    "articles": "see if I've posted any writings",
+                    "funi": "look at some programming memes",
+                    "game": "play a typing game",
+                    "chat": "talk with someone in an anonymous chat hosted by me",
+                    "links": "me on the internet (other parts of it)"
+                }[this.id]
+                descBox.innerHTML = '';
+                descBox.style.display = 'block';
+                timer = setInterval(() => {
+                    if (descBox.innerHTML.length < descBox.targetText.length) {
+                        descBox.innerHTML += descBox.targetText.charAt(descBox.innerHTML.length);
+                    } else {
+                        clearInterval(timer);
+                    }
+                }, 25);
+                descBox.parentElement.style.opacity = '100%';
+            }
+            function removeDesc() {
+                descBox.parentElement.style.opacity = '0';
+                clearInterval(timer);
+            }
+            window.onload = function () {
+                descBox = document.getElementById("description-box");
+                const entries = document.getElementsByClassName('menu-text-element');
+                for (let i = 0; i < entries.length; ++i) {
+                    entries[i].addEventListener("mouseover", drawDesc);
+                    entries[i].addEventListener("mouseout", removeDesc);
+                }
+            }
+
+        </script>
+    </head>
+    <body>
+    <div id="container">
+        <img draggable="false" id="menu-background" src="/assets/muller-brockman-no-text-black.svg"/>
+        <div id="menu">
+            <a class="menu-text-element" id="articles" href="/articles">articles</a>
+            <a class="menu-text-element" id="funi" href="/funi">funi</a>
+            <a class="menu-text-element" id="game" href="/game">game</a>
+            <a class="menu-text-element" id="chat" href="/chat">chat</a>
+            <a class="menu-text-element" id="links" href="/links">links</a>
+        </div>
+        <div class="floating-text" id="programming">programming</div>
+        <div class="floating-text" id="CS">CS</div>
+        <div class="floating-text" id="philosophy">philosophy</div>
+        <div id="descbox-container">
+            <div class=typewriter id="description-box"></div>
+        </div>
+    </div>
+    </body>
+</html>
+

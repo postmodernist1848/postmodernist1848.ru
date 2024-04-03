@@ -58,6 +58,10 @@ func getContents(path string) ([]byte, error) {
 /* the default is getting a file path from map and
  * inserting its contents into the index template */
 func serveRoot(w http.ResponseWriter, r *http.Request) {
+    if r.URL.Path == "/" {
+        http.ServeFile(w, r, "index.html")
+        return
+    }
 	contents, err := getContents(r.URL.Path)
 	if err != nil {
 		contents = errorContents
@@ -158,6 +162,7 @@ func serveChatMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write([]byte("</ul>"))
 }
+
 func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var msg ChatMessage
