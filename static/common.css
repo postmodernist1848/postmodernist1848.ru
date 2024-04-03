@@ -14,20 +14,16 @@ html, body {
 
 
 #contents {
-    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
 article {
-    width: 1000px;
+    width: min(99vw, 1000px);
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-#navbar {
 }
 
 fieldset {
@@ -35,11 +31,18 @@ fieldset {
 }
 
 #navbar-links {
+    width: 100lvw;
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: flex-end;
+    flex-wrap: wrap;
     gap: 1%;
+}
+
+img {
+    max-width: 100vw;
+    max-height: 100vh;
 }
 
 #navbar-links a:hover {
@@ -59,29 +62,27 @@ fieldset {
     color: white;
 }
 
-#contents {
-    padding-left: 20px;
-    padding-right: 20px;
-}
-
 footer {
     position: static;
     text-align: right;
     margin-right: 1em;
 }
 
-@media screen and (max-width: 1300px) {
+@media screen and (max-width: 750px) {
+
     * {
         font-size: 15pt;
     }
 
-    #navbar {
-        flex-direction: column;
-    }
     #navbar-links {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        gap: 5px;
+        align-items: stretch;
+    }
+
+    .navbar-link {
+        text-align: center;
     }
 }
 
