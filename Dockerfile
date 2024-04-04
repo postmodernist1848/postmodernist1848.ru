@@ -6,6 +6,9 @@ WORKDIR /
 # Copy the current directory contents into the container at /app
 COPY . .
 
+# Download dependencies as a separate step to cache downloads
+RUN go mod download
+
 # Build the Go app
 RUN go build -o main .
 
