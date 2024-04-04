@@ -30,14 +30,17 @@ var logTemplate = template.Must(template.New("log").Parse(logTemplateString))
 var errorContents = []byte("<h1>404: this page does not exist</h1>")
 
 var pathToFile = map[string]string{
-	"/funi":      "funi.html",
-	"/game":      "game.html",
-	"/chat":      "chat.html",
-	"/articles":  "articles.html",
+	"/fun":      "fun.html",
+	"/game":     "game.html",
+	"/chat":     "chat.html",
+	"/articles": "articles.html",
+
+	"/about":  "about.html",
+	"/linalg": "linalg.html",
+
 	"/manifesto": "manifesto.html",
 	"/haskell":   "haskell.html",
-	"/links":     "links.html",
-	"/linalg":    "linalg.html",
+	"/ieee754":   "ieee754.html",
 }
 
 func getContents(path string) ([]byte, error) {
@@ -58,10 +61,10 @@ func getContents(path string) ([]byte, error) {
 /* the default is getting a file path from map and
  * inserting its contents into the index template */
 func serveRoot(w http.ResponseWriter, r *http.Request) {
-    if r.URL.Path == "/" {
-        http.ServeFile(w, r, "index.html")
-        return
-    }
+	if r.URL.Path == "/" {
+		http.ServeFile(w, r, "index.html")
+		return
+	}
 	contents, err := getContents(r.URL.Path)
 	if err != nil {
 		contents = errorContents
@@ -200,7 +203,7 @@ func main() {
 	http.HandleFunc("/assets/", serveStaticFile)
 	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
 
-    // old uses current /api
+	// old uses current /api
 	http.HandleFunc("/old/", old.ServeRoot)
 	http.HandleFunc("/old/log", old.ServeLog)
 	http.HandleFunc("/old/static/", serveStaticFile)

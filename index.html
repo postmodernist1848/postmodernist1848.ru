@@ -11,11 +11,11 @@
             let timer;
             function drawDesc() {
                 descBox.targetText = {
+                    "about": "learn a bit about me and my website",
                     "articles": "see if I've posted any writings",
-                    "funi": "look at some programming memes",
                     "game": "play a typing game",
-                    "chat": "talk with someone in an anonymous chat hosted by me",
-                    "links": "me on the internet (other parts of it)"
+                    "chat": "talk with someone in an anonymous chat",
+                    "fun": "some fun stuff with programming",
                 }[this.id]
                 descBox.innerHTML = '';
                 descBox.style.display = 'block';
@@ -47,11 +47,11 @@
     <div id="container">
         <img draggable="false" id="menu-background" src="/assets/muller-brockman-no-text-black.svg"/>
         <div id="menu">
+            <a class="menu-text-element" id="about" href="/about">about</a>
             <a class="menu-text-element" id="articles" href="/articles">articles</a>
-            <a class="menu-text-element" id="funi" href="/funi">funi</a>
             <a class="menu-text-element" id="game" href="/game">game</a>
             <a class="menu-text-element" id="chat" href="/chat">chat</a>
-            <a class="menu-text-element" id="links" href="/links">links</a>
+            <a class="menu-text-element" id="fun" href="/fun">fun</a>
         </div>
         <div class="floating-text" id="programming">programming</div>
         <div class="floating-text" id="CS">CS</div>
