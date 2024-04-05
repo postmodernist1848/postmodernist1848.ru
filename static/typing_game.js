@@ -1,7 +1,6 @@
 const healthbar = document.getElementById("healthbar");
 const text_input = document.getElementById("typing-game-input");
 const canvas = document.querySelector("canvas");
-const rainbowCheckbox = document.getElementById("rainbow-toggle");
 canvas.style.marginRight = "auto";
 canvas.style.marginLeft = "auto";
 const difficultySlider = document.getElementById("difficulty-slider");
@@ -57,7 +56,6 @@ function textColor(background) {
     let luminance = (0.299 * (background >> 16 & 0xff) +
                      0.587 * (background >>  8 & 0xff) +
                      0.114 * (background >>  0 & 0xff)) / 255
-    console.log(luminance);
     if (luminance > 0.5) return "black";
     else return "white";
 }
@@ -112,8 +110,8 @@ function spawn_circle() {
             canvas.height * 0.2, 
             word.length * 5 + 10,
             80 - word.length * 5, 
-            word, 
-            rainbowCheckbox.checked ? getRandomColorNumber(): 0x990000
+            word,
+            0x990000
         )
     );
 }
