@@ -13,7 +13,9 @@
     <h1>My quest to implement IEEE754 floating point numbers</h1>
     </div>
 
-    Complete implementation can be found at <a href="https://github.com/postmodernist1848/ieee754">github.com/postmodernist1848/ieee754</a>
+    <p>
+        Unfortunately, I am not allowed to share the code until the end of this semester.
+    </p>
     <p>
         So we had to implement IEEE754 as an assignment. We were told by Павел Скаков that only
         one student was able to finish this assignment with 100% test completion. So I was up for the challenge.
@@ -90,10 +92,10 @@
                 <br>
                 Example 3: ...01<strong>|</strong>01110 first_rounded_bit == 0 sticky_bit == 1<br>
                 Example 4: ...01<strong>|</strong>00000 first_rounded_bit == 0 sticky_bit == 0<br>
-                You can see how we don't need to do anything in these cases (that is, round down, forget the rounded bits).</li>
+                You can see how we don't need to do anything in these cases (that is, round down, discard the rounded bits).</li>
             <li>
                 Towards zero:<br>
-                The easiest rounding mode. Just don't do anything and forget the rounded bits.</li>
+                The easiest rounding mode. Just don't do anything and discard the rounded bits.</li>
             <li>
                 Towards positive infinity:<br>
                 We round down in every case, but one:
@@ -221,8 +223,9 @@ else
             return b;
         return a;
     }</code></pre>
-    <p>I might add more code samples later, but for now
-        you can just check out <a href="https://github.com/postmodernist1848/ieee754">the actual implementation</a>.</p>
+    <p>
+        Code coming soon...
+    </p>
     <script>
         hljs.highlightAll()
     </script>
