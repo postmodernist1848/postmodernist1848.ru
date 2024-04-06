@@ -1,3 +1,4 @@
+<meta name="viewport" content="width=device-width, initial-scale=0.3">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <article>
@@ -192,7 +193,8 @@ else
     resm <<= 1; // shift left to make space for sticky bit
     res_exp--;
     sticky_bit |= first_rounded_bit;
-    resm |= sticky_bit;	   // save sticky bit as last bit which is going to be shifted anyway
+    resm |= sticky_bit;	   // save sticky bit as last bit
+                                          // which is going to be shifted anyway
 }</code></pre>
     <p>
         I did not discuss special cases like NaN or Inf, because they are quite intuitive and can be easily understood
@@ -215,7 +217,8 @@ else
         So you kind of have to 'if' it:</p>
         <pre><code class="language-c++">    if (b.is_zero())
     {
-        if (rounding == ROUNDING_TOWARD_NEG_INFINITY && a.is_zero() && a.s != b.s)
+        if (rounding == ROUNDING_TOWARD_NEG_INFINITY
+            && a.is_zero() && a.s != b.s)
         {
             return F { 1, 0, 0 };
         }
