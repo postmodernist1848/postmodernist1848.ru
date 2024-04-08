@@ -38,10 +38,10 @@ var pathToFile = map[string]string{
 	"/about":  "about.html",
 	"/linalg": "linalg.html",
 
-	"/manifesto": "manifesto.html",
-	"/haskell":   "haskell.html",
-	"/ieee754":   "ieee754.html",
-	"/history":   "history.html",
+	"/articles/manifesto": "manifesto.html",
+	"/articles/haskell":   "haskell.html",
+	"/articles/ieee754":   "ieee754.html",
+	"/articles/history":   "history.html",
 }
 
 func getContents(path string) ([]byte, error) {
