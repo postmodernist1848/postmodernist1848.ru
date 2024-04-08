@@ -1,0 +1,101 @@
+<article>
+    <h2 style="text-align: center">This article aims to document the humble tech stack behind postmodernists1848.ru</h2>
+
+    <p> It all started in summer of 2023 when I started experimenting with web.
+        I didn't have any experience with HTML, CSS and JavaScript at the time,
+        because low level programming
+        was much more interesting for me.
+        But my friend (not a programmer, just a 3D artist) asked for some guidance
+        on how to build his personal website which he needed for job offers.
+        Thinking of myself as a real programmer, I believed I could figure out everything
+        on the fly. And yeah, while most of the advice that I've given was useful,
+        my lack of experience required to fiddle with CSS and HTML and JS myself a lot.
+        That inspired me to build my own site.
+    </p>
+    <p><a href="https://github.com/postmodernist1848/postmodernist1848.github.io">Version 1</a>
+        was actually a static site deployed via GitHub pages.
+        It was at that time that I added the <a href="https://postmodernist1848.github.io/funi.html">/funi</a>
+        page, <a href="https://postmodernist1848.github.io/game.html">a typing game</a> in JavaScript.
+        I implemented a sidebar page into which different "contents"
+        pages were injected with XHR or fetch API in JS first.
+        Then I decided to go for another approach and
+        split those into actually separate pages which were generated during build step
+        with a Python script that used Beautiful Soup library for parsing HTML.
+        I used CI that builds this and deploys using an
+        <a href="https://github.com/peaceiris/actions-gh-pages">action for gh-pages</a>.
+    </p>
+    <p>
+        I also learned about CORS and the fact that I can't just
+        fetch anything in JavaScript from the client. My hack was to
+        use some random CORS proxy.
+    </p>
+    <p>
+        I wanted to make something real. At that time I also learned Go and knew it was really
+        good for backend development, which eventually proved to be true.
+        So I wrote my own Go server for this website.
+        First commit is dated September 30, 2023.
+    </p>
+    <p>
+        Now, I didn't have to use a CORS proxy to fetch /log from PasteBin
+        (which is how it works; I just write my notes on PasteBin to
+        then fetch them to serve to users).
+        Also, no need to build multiple files with Python. I could leverage the power of
+        Go templates to generate the pages. I obviously enjoyed server programming much more than
+        the HTML, CSS, JS unholy trinity. That's why I created the GithubLines package for counting
+        lines in a user's GitHub repository and displayed this functionality on the main page.
+    </p>
+    <p>
+        Old version of the website is still available at <a href="/old/">www.postmodernist1848.ru/old/</a>
+    </p>
+    <p>
+        I used free hosting providers throughout the entire lifetime of this website prior to this point.
+        In October of 2023, I moved to a container as a service platform called <a href="https://www.back4app.com/">
+        Back4App</a>, so I had to apply some docker knowledge there, too.
+        I was using <a href="https://render.com/"> Render</a> before. The application did spin down after 15-30 minutes
+        of inactivity. <s>Shh. Don't tell anyone: you can actually send
+        a request to your server every 15 minutes to avoid the shutdown. You'll face a CPU limit, though.</s>
+        Recently, I moved to a cheap VPS, which is just incredible. Not a lot of computing power, but I didn't
+        have much in the first place. I gained something really important. And it is full control over
+        deployment.
+        Now, I could use GitHub CI to build a docker container on push to master.
+        Later, I came up with an idea of creating a little chat web app.
+        During a terrible day, when I couldn't do anything else (bad night's sleep),
+        I decided to kill the time until the night with some
+        fun programming and implemented the chat on the website.
+        This required adding a database. I chose the simplest solution for the little amounts of data that
+        I had, which is SQLite. I also had a single server instance, so I didn't need a remote database.
+        Super simple to integrate into the server. Just add <a href="https://github.com/mattn/go-sqlite3">this dependency</a>
+        and you'll gain access to the sqlite3 database driver.
+        Technically, this website now has /api/chat-messages, /api/send-message API endpoints,
+        together with /api/countlines/.
+        Although, the APIs currently just straight up return an HTML list (maybe that won't be true in the future,
+        because JSON feels like a more sane solution, but what I did is the simplest one for my site),
+        you can write your chat client for desktop, mobile or another site.
+    </p>
+    <p>
+        The final stage of this website at which it is right now came when I decided to do a complete
+        redesign of the website. You can compare it to the old one and see it for yourself. And yes, I do miss
+        the absurdity and coziness of the old postmodernist1848.ru, but I wanted to try out something
+        more professional and cool-looking. Also, I watched
+        <a href="https://youtu.be/YNOwO5s4AL8?si=Ylq1W4Bs8zu6P036">a video</a>
+        and was inspired by Josef Müller-Brockmann's design you can see
+        on <a href="/"> main page</a> now.
+        I had to leave out some legacy code for the true fans of postmodernist1848.ru, though, to make
+        it available at /old/.
+    </p>
+    <p>
+        I started noticing that with more Go code and a new dependency the build times were awful. GitHub
+        jobs took longer than 2 and a half minutes to deploy on new commit.
+        For the entire time I thought that I just had a bad VPS. Still, I attempted to research this issue.
+        I found out that docker can cache the dependency download stage (go mod download)
+        <a href="https://github.com/postmodernist1848/postmodernist1848.ru/commit/fbfbe0a001a0480d29fd466aeceb09b392a24387">
+            this
+        </a> cut down build times by over 100 seconds, I think.
+        Another big discovery was the ability to cache Go compilation locally to reuse for docker builds.
+        <a href="https://github.com/postmodernist1848/postmodernist1848.ru/commit/0de0146a64d63fdefaf3bec24e4a1de044ec5a7c">
+            this
+        </a> made the build times <em>blazingly fast</em> with workflow run times of under 30s.
+        Locally, building the image took 8.2 seconds.
+    </p>
+    <a href="https://github.com/postmodernist1848/postmodernist1848.ru">Source code</a>
+</article>

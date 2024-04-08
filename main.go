@@ -41,6 +41,7 @@ var pathToFile = map[string]string{
 	"/manifesto": "manifesto.html",
 	"/haskell":   "haskell.html",
 	"/ieee754":   "ieee754.html",
+	"/history":   "history.html",
 }
 
 func getContents(path string) ([]byte, error) {
