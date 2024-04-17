@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"unicode/utf8"
 
 	_ "github.com/mattn/go-sqlite3"
 	"postmodernist1848.ru/githublines"
@@ -97,9 +98,6 @@ func processRawLogHTML(rawHTML []byte) ([]byte, error) {
 	return tpl.Bytes(), nil
 }
 
-/* log gets data from pastebin and inserts into the template
- * which adds some interactive elements with js
- */
 func serveLog(w http.ResponseWriter, r *http.Request) {
 	rawLogHTML, err := os.ReadFile("log.html")
 	var logHTML []byte
@@ -159,21 +157,26 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+	if l := utf8.RuneCountInString(msg.Text); l >= 1848 {
+		log.Printf("Message too long (%v runes)\n", l)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	log.Println("Received message: ", msg)
-	insertChatMessage(database, msg)
+	insertChatMessage(msg)
 }
 
-func insertChatMessage(db *sql.DB, message ChatMessage) error {
+var database *sql.DB
+
+func insertChatMessage(message ChatMessage) error {
 	query := `INSERT INTO message(author, text) VALUES (?, ?)`
-	statement, err := db.Prepare(query)
+	statement, err := database.Prepare(query)
 	if err != nil {
 		return err
 	}
 	_, err = statement.Exec(message.Author, message.Text)
 	return err
 }
-
-var database *sql.DB
 
 func main() {
 	httpPort := "80"
@@ -197,8 +200,7 @@ func main() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-sigs
-		err := database.Close()
-		if err != nil {
+		if database.Close() != nil {
 			log.Println("Failed to close database")
 			os.Exit(137)
 		}
