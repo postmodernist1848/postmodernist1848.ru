@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -27,7 +26,8 @@ var indexTemplate = template.Must(template.New("index").Parse(indexTemplateStrin
 //go:embed log.html.tmpl
 var logTemplateString string
 var logTemplate = template.Must(template.New("log").Parse(logTemplateString))
-var errorContents = []byte("<h1>404: this page does not exist</h1>")
+var notFoundContents = []byte("<h1>404: this page does not exist</h1>")
+var errorContents = []byte("<h1>Server error</h1>")
 
 var pathToFile = map[string]string{
 	"/fun":      "fun.html",
@@ -59,6 +59,17 @@ func getContents(path string) ([]byte, error) {
 	return content, nil
 }
 
+func serveContents(w http.ResponseWriter, r *http.Request, contents []byte) {
+	data := map[string]interface{}{
+		"contents": template.HTML(contents),
+	}
+	err := indexTemplate.ExecuteTemplate(w, "index", data)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Failed to execute template on %s", r.URL.Path)
+	}
+}
+
 /* the default is getting a file path from map and
  * inserting its contents into the index template */
 func serveRoot(w http.ResponseWriter, r *http.Request) {
@@ -68,32 +79,10 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	contents, err := getContents(r.URL.Path)
 	if err != nil {
-		contents = errorContents
+		contents = notFoundContents
 		w.WriteHeader(http.StatusNotFound)
 	}
-	data := map[string]interface{}{
-		"contents": template.HTML(contents),
-	}
-	err = indexTemplate.ExecuteTemplate(w, "index", data)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Failed to execute template on %s", r.URL.Path)
-	}
-}
-
-/* fetch the pastebin blog */
-func getRawLogHTML() ([]byte, error) {
-	const url = "https://pastebin.com/raw/vb43aqyz"
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	text, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return text, nil
+	serveContents(w, r, contents)
 }
 
 /* insert into the log template */
@@ -112,27 +101,21 @@ func processRawLogHTML(rawHTML []byte) ([]byte, error) {
  * which adds some interactive elements with js
  */
 func serveLog(w http.ResponseWriter, r *http.Request) {
-	rawLogHTML, err := getRawLogHTML()
+	rawLogHTML, err := os.ReadFile("log.html")
+	var logHTML []byte
 	if err != nil {
 		log.Println(err)
-		w.Write(errorContents)
+		logHTML = errorContents
 		w.WriteHeader(http.StatusServiceUnavailable)
+	} else {
+		logHTML, err = processRawLogHTML(rawLogHTML)
+		if err != nil {
+			log.Printf("Failed to process /log HTML")
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 
-	logHTML, err := processRawLogHTML(rawLogHTML)
-	if err != nil {
-		log.Printf("Failed to process /log HTML")
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-
-	data := map[string]interface{}{
-		"contents": template.HTML(logHTML),
-	}
-	err = indexTemplate.ExecuteTemplate(w, "index", data)
-	if err != nil {
-		log.Printf("Failed to execute template on %s", r.URL.Path)
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	serveContents(w, r, logHTML)
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request) {
@@ -193,8 +176,8 @@ func insertChatMessage(db *sql.DB, message ChatMessage) error {
 var database *sql.DB
 
 func main() {
-	http_port := "80"
-	https_port := "443"
+	httpPort := "80"
+	httpsPort := "443"
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
@@ -235,11 +218,11 @@ func main() {
 		log.Fatal("Failed to open sqlite database: ", err)
 	}
 
-	log.Println("Listening for http on", http_port)
+	log.Println("Listening for http on", httpPort)
 	go func() {
-		log.Fatal(http.ListenAndServe(":"+http_port, nil))
+		log.Fatal(http.ListenAndServe(":"+httpPort, nil))
 	}()
 
-	log.Println("Listening for https on", https_port)
-	log.Fatal(http.ListenAndServeTLS(":"+https_port, "server.crt", "server.key", nil))
+	log.Println("Listening for https on", httpsPort)
+	log.Fatal(http.ListenAndServeTLS(":"+httpsPort, "server.crt", "server.key", nil))
 }
