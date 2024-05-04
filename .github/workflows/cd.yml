@@ -35,5 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Attempt to curl postmodernist1848.ru
-      run: curl https://postmodernist1848.ru >> $GITHUB_STEP_SUMMARY
+      run: |
+        echo "# Curl https://postmodernist1848.ru" >> $GITHUB_STEP_SUMMARY
+        echo '```html' >> $GITHUB_STEP_SUMMARY
+        curl https://postmodernist1848.ru >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
 
