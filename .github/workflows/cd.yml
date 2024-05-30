@@ -29,9 +29,15 @@ jobs:
             echo "$SERVER_KEY" > server.key
           fi
           ./deploy.sh
-  test:
+  Test:
+    needs:
+      build
     runs-on: ubuntu-latest
     steps:
-    - name: attempt to curl postmodernist1848.ru
-      run: curl https://postmodernist1848.ru >> $GITHUB_STEP_SUMMARY
+    - name: Attempt to curl postmodernist1848.ru
+      run: |
+        echo "# Curl https://postmodernist1848.ru" >> $GITHUB_STEP_SUMMARY
+        echo '```html' >> $GITHUB_STEP_SUMMARY
+        curl https://postmodernist1848.ru >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
 
