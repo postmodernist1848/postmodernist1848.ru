@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+    "html"
 	"html/template"
 	"log"
 	"net/http"
@@ -140,9 +141,9 @@ func serveChatMessages(w http.ResponseWriter, r *http.Request) {
 		var text string
 		row.Scan(&id, &author, &text)
 		w.Write([]byte("<li>"))
-		w.Write([]byte(author))
+		w.Write([]byte(html.EscapeString(author)))
 		w.Write([]byte(": "))
-		w.Write([]byte(text))
+		w.Write([]byte(html.EscapeString(text)))
 		w.Write([]byte("</li>"))
 	}
 	w.Write([]byte("</ul>"))
