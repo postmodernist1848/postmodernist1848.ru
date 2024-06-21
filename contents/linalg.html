@@ -1,6 +1,16 @@
 <h1 xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">Matrix symmetrization, assymetrization</h1>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+    td.input-data {
+        padding: 2px;
+    }
+    input.input-data {
+        width: 3em;
+        padding: 0;
+    }
+</style>
 <fieldset>
     <legend>Select operation</legend>
     <div>
@@ -12,7 +22,7 @@
         <label for="assym">assym</label>
     </div>
     <label for="dimensions">Dimensions</label>
-    <select id="dimensions" onchange="updateTable(this.value)">
+    <select id="dimensions" autocomplete="off" onchange="updateTable(this.value)">
         <option value="1">1</option>
         <option selected="selected" value="2">2</option>
         <option value="3">3</option>
@@ -22,7 +32,7 @@
     </select>
     <div>
         <label for="indices-count">Indices count</label>
-        <select id="indices-count" onchange="selectIndexCount(this.value)">
+        <select id="indices-count" autocomplete="off" onchange="selectIndexCount(this.value)">
             <option value="1">1</option>
             <option selected="selected" value="2">2</option>
             <option value="3">3</option>
@@ -45,6 +55,7 @@
 <button onclick="calculate()">calculate</button>
 
 <table id="output-table" style="border: 1px solid">
+    <tr><th>Output</th></tr>
 </table>
 <input readonly="readonly" id="text-output">
 
@@ -194,8 +205,8 @@ for row in tensor_prod:
                 for (let m = 0; m < superlayers; m++) {
                     for (let k = 0; k < layers; k++) {
                         for (let j = 0; j < cols; j++) {
-                            html += "<td>"
-                            html += `<input id=\"input-tensor[${i}][${j}][${k}][${l}][${m}]\">`
+                            html += "<td class='input-data'>"
+                            html += `<input class="input-data" id=\"input-tensor[${i}][${j}][${k}][${l}][${m}]\">`
                             html += "</td>"
                         }
                     }
@@ -306,10 +317,11 @@ for row in tensor_prod:
             }
         }
         document.getElementById('output-table').innerHTML = html
-        textOutput = "["
+
+        let textOutput = "["
         matrix.forEach((row, index) => {
             textOutput += row.toString()
-            if (index + 1 !== matrix.length) {
+            if (index !== matrix.length - 1) {
                 textOutput += ';'
             }
         })
