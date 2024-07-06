@@ -44,6 +44,7 @@ var pathToFile = map[string]string{
 	"/articles/haskell":   "haskell.html",
 	"/articles/ieee754":   "ieee754.html",
 	"/articles/history":   "history.html",
+	"/articles/cfcracker": "cfcracker.html",
 }
 
 func getContents(path string) ([]byte, error) {
@@ -185,10 +186,10 @@ func main() {
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
-	http.HandleFunc("/api/chat-messages", serveChatMessages)
-	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
+	http.HandleFunc("/api/chat-messages", serveChatMessages)
+	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
 
 	// old uses current /api
