@@ -49,7 +49,7 @@
     </p>
     <p>
         I used free hosting providers throughout the entire lifetime of this website prior to this point.
-        In October of 2023, I moved to a container as a service platform called <a href="https://www.back4app.com/">
+        In October 2023, I moved to a container as a service platform called <a href="https://www.back4app.com/">
         Back4App</a>, so I had to apply some docker knowledge there, too.
         I was using <a href="https://render.com/"> Render</a> before. The application did spin down after 15-30 minutes
         of inactivity. <s>Shh. Don't tell anyone: you can actually send
@@ -93,9 +93,13 @@
         </a> cut down build times by over 100 seconds, I think.
         Another big discovery was the ability to cache Go compilation locally to reuse for docker builds.
         <a href="https://github.com/postmodernist1848/postmodernist1848.ru/commit/0de0146a64d63fdefaf3bec24e4a1de044ec5a7c">
-            this
+            This
         </a> made the build times <em>blazingly fast</em> with workflow run times of under 30s.
         Locally, building the image took 8.2 seconds.
+    </p>
+    <p>
+        My SO (not Stack Overflow) submitted my website to a Golang streamer to review and I got a few messages that
+        injected HTML into chat. So I added <code>html.EscapeString</code>.
     </p>
     <a href="https://github.com/postmodernist1848/postmodernist1848.ru">Source code</a>
 </article>

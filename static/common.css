@@ -25,6 +25,12 @@ article {
     align-items: center;
 }
 
+code {
+    background-color: #343942;
+    padding: 4px;
+    border-radius: 10px;
+}
+
 fieldset {
     opacity: 80%;
 }
