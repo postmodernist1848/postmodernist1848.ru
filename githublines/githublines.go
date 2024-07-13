@@ -2,6 +2,7 @@ package githublines
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -58,57 +59,61 @@ type RepoData struct {
 	LineCount int
 }
 
-func CountLinesRepo(repo Repo, c chan RepoData) {
+func CountLinesRepo(ctx context.Context, repo Repo, c chan RepoData) {
 	url := fmt.Sprintf("https://github.com/%v", repo.FullName)
 	dir := randomFilename()
 	cmd := exec.Command("git", "clone", "--depth", "1", url, dir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("GithubLines: git clone command error: %+v", err)
-		log.Printf(string(out))
+		log.Print(string(out))
 		c <- RepoData{repo.Name + " (error)", 0}
 		return
 	}
+	defer os.RemoveAll(dir)
 
 	var linesCount int
-
 	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if strings.HasSuffix(path, "/.git") {
-			return filepath.SkipDir
-		}
-		if !d.IsDir() {
-			ext := filepath.Ext(path)
-			_, matchedFile := codeFilenames[d.Name()]
-			_, matchedExt := codeFiletypes[ext]
-			if matchedFile || matchedExt {
-				count, err := countLinesFile(path)
-				if err != nil {
-					log.Printf("countLinesFile error: %+v", err)
-					return err
-				}
-				linesCount += count
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			if strings.HasSuffix(path, "/.git") {
+				return filepath.SkipDir
 			}
+			if !d.IsDir() {
+				ext := filepath.Ext(path)
+				_, matchedFile := codeFilenames[d.Name()]
+				_, matchedExt := codeFiletypes[ext]
+				if matchedFile || matchedExt {
+					count, err := countLinesFile(path)
+					if err != nil {
+						log.Printf("countLinesFile error: %+v", err)
+						return err
+					}
+					linesCount += count
+				}
+			}
+			return nil
 		}
-		return nil
 	})
 	if err != nil {
 		log.Printf("Walkdir error: %+v", err)
 		c <- RepoData{repo.Name + " (error)", 0}
 		return
 	}
-	os.RemoveAll(dir)
 	c <- RepoData{repo.Name, linesCount}
-
 }
 
 const countlines_requests_limit = 5
+const countlines_repos_limit = 100
 
 var countlines_current_requests atomic.Int32
 
 func ServeCountlines(w http.ResponseWriter, r *http.Request) {
 
 	if countlines_current_requests.Load() >= countlines_requests_limit {
-		io.WriteString(w, "Too many requests are being processed currently. Try later")
+		fmt.Fprint(w, "Too many requests are being processed currently. Try again later.")
 		return
 	}
 	countlines_current_requests.Add(1)
@@ -140,16 +145,24 @@ func ServeCountlines(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Failure decoding data from Github")
 		return
 	}
+	if len(result) > countlines_repos_limit {
+		fmt.Fprintf(w, "Too many repositories")
+	}
 	c := make(chan RepoData)
 	for _, repo := range result {
-		go CountLinesRepo(repo, c)
+		go CountLinesRepo(r.Context(), repo, c)
 	}
 	io.WriteString(w, "<ul>")
 	totalCount := 0
 	for range result {
-		repo := <-c
-		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
-		totalCount += repo.LineCount
+		select {
+		case repo := <-c:
+			fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
+			totalCount += repo.LineCount
+		case <-r.Context().Done():
+			log.Println("githublines: cancelled")
+			return
+		}
 	}
 	io.WriteString(w, "<ul>")
 	fmt.Fprintf(w, "Total: %v lines", totalCount)

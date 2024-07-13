@@ -22,26 +22,32 @@ Count lines in your GitHub repo:
     function countLines() {
         const username = document.getElementById("github-lines-input").value;
         const outputDiv = document.getElementById("github-lines-output");
-        let img = document.createElement('img');
-        img.src = '/assets/loading.gif';
+        let img = document.createElement("img");
+        img.src = "/assets/loading.gif";
         outputDiv.replaceChildren(img);
 
+        if (controller !== null) {
+            controller.abort();
+        }
         controller = new AbortController();
         fetch(`/api/countlines/${username}`, {
             signal: controller.signal
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error: ${response.status}`);
-                }
-                return response.text();
-            }).then((html) => {
-            outputDiv.innerHTML = html
-        }).catch((err) => {
-                console.error(`Fetch problem: ${err.message}`)
-                outputDiv.innerHTML = "Server Error"
+        }).then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
             }
-        );
+            return response.text();
+        }).then((html) => {
+            outputDiv.innerHTML = html;
+        }).catch((err) => {
+            if (err.name === "AbortError") {
+                return;
+            }
+            console.error(`Fetch problem: ${err}`);
+            outputDiv.innerHTML = "Server Error";
+        }).finally(() => {
+            controller = null;
+        });
     }
 </script>
 
