@@ -1,10 +1,16 @@
-Count lines in your GitHub repo:
-<input id="github-lines-input"  placeholder="Username" onkeydown="return isValid(event.key);">
-<button id="github-lines-submit" onclick="countLines()">Submit</button>
-<br>Warning: may take some time
-<div id="github-lines-output">
+<div>
+    <div style="padding-top: 10%">
+        <div>
+            <label style="display: block;" for="github-lines-input">Count lines in your GitHub repo:</label>
+            <input id="github-lines-input" placeholder="Username" onkeydown="return isValid(event.key);">
+            <button id="github-lines-submit" onclick="countLines()">Submit</button>
+        </div>
+        <br>Warning: may take some time
+        <hr class="clamped-width">
+    </div>
+    <div id="github-lines-output" style="padding-bottom: 100px">
+    </div>
 </div>
-<hr class="clamped-width">
 <p>
     I like building stuff from the ground up
 </p>
@@ -14,7 +20,7 @@ Count lines in your GitHub repo:
             countLines();
             return false;
         }
-        return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch == '-' || '0' <= ch && ch <= '9';
+        return ch >= "a" && ch <= "z" || ch >= "A" && ch <= "Z" || ch === "-" || "0" <= ch && ch <= "9";
     }
 
     let controller = null;
@@ -56,10 +62,10 @@ Count lines in your GitHub repo:
 <strong>Input your phone number</strong>
 <div id="number">+0 (000) 000-0000</div>
 <input style="display: block" id="phone-number-slider" type="range"
-min="0"
-max="99999999999"
-step="1"
-value="0"
+       min="0"
+       max="99999999999"
+       step="1"
+       value="0"
 />
 <button style="display: inline">Send</button> (this button doesn't do anything)
 <script>
@@ -69,11 +75,11 @@ value="0"
         const b = s.substring(1, 4);
         const c = s.substring(4, 7);
         const d = s.substring(7, 11);
-        return `+${a} (${b}) ${c}-${d}`
+        return `+${a} (${b}) ${c}-${d}`;
     }
 
     const slider = document.getElementById("phone-number-slider");
-    slider.addEventListener('input', () => {
+    slider.addEventListener("input", () => {
         document.getElementById("number").innerHTML = phonify(slider.value);
-    })
+    });
 </script>
