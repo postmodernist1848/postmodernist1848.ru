@@ -1,85 +1,162 @@
-<div>
-    <div style="padding-top: 10%">
-        <div>
-            <label style="display: block;" for="github-lines-input">Count lines in your GitHub repo:</label>
-            <input id="github-lines-input" placeholder="Username" onkeydown="return isValid(event.key);">
-            <button id="github-lines-submit" onclick="countLines()">Submit</button>
+<style>
+    #insrisp {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        background-color: #070F19;
+        overflow: hidden;
+        z-index: -1;
+    }
+
+    .rain-drop {
+        position: absolute;
+        top: -120px;
+        background-color: white;
+        height: 100px;
+        width: 2px;
+        animation-iteration-count: infinite;
+        animation-name: fall;
+        animation-duration: 1.9s;
+        animation-timing-function: linear;
+        z-index: -1;
+    }
+
+    @keyframes fall {
+        from {
+            transform: rotate(10deg) translateY(-100%);
+        }
+        to {
+            transform: rotate(10deg) translateY(120vh);
+        }
+    }
+</style>
+<div id="github-lines" style="display: flex; flex-direction: column; align-items: center;">
+    <div>
+        <div style="padding-top: 100px">
+            <div>
+                <label style="display: block;" for="github-lines-input">Count lines in your GitHub repos:</label>
+                <input id="github-lines-input" placeholder="Username" onkeydown="return isValid(event.key);">
+                <button id="github-lines-submit" onclick="countLines()">Submit</button>
+            </div>
+            <br>Warning: may take some time
+            <hr class="clamped-width">
         </div>
-        <br>Warning: may take some time
-        <hr class="clamped-width">
+        <div id="github-lines-output" style="padding-bottom: 100px">
+        </div>
     </div>
-    <div id="github-lines-output" style="padding-bottom: 100px">
-    </div>
-</div>
-<p>
-    I like building stuff from the ground up
-</p>
-<script>
-    function isValid(ch) {
-        if (ch === "Enter") {
-            countLines();
-            return false;
-        }
-        return ch >= "a" && ch <= "z" || ch >= "A" && ch <= "Z" || ch === "-" || "0" <= ch && ch <= "9";
-    }
-
-    let controller = null;
-
-    function countLines() {
-        const username = document.getElementById("github-lines-input").value;
-        const outputDiv = document.getElementById("github-lines-output");
-        let img = document.createElement("img");
-        img.src = "/assets/loading.gif";
-        outputDiv.replaceChildren(img);
-
-        if (controller !== null) {
-            controller.abort();
-        }
-        controller = new AbortController();
-        fetch(`/api/countlines/${username}`, {
-            signal: controller.signal
-        }).then((response) => {
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
+    <script>
+        function isValid(ch) {
+            if (ch === "Enter") {
+                countLines();
+                return false;
             }
-            return response.text();
-        }).then((html) => {
-            outputDiv.innerHTML = html;
-        }).catch((err) => {
-            if (err.name === "AbortError") {
-                return;
+            return ch >= "a" && ch <= "z" || ch >= "A" && ch <= "Z" || ch === "-" || "0" <= ch && ch <= "9";
+        }
+
+        let controller = null;
+
+        function countLines() {
+            const username = document.getElementById("github-lines-input").value;
+            const outputDiv = document.getElementById("github-lines-output");
+            let img = document.createElement("img");
+            img.src = "/assets/loading.gif";
+            outputDiv.replaceChildren(img);
+
+            if (controller !== null) {
+                controller.abort();
             }
-            console.error(`Fetch problem: ${err}`);
-            outputDiv.innerHTML = "Server Error";
-        }).finally(() => {
-            controller = null;
+            controller = new AbortController();
+            fetch(`/api/countlines/${username}`, {
+                signal: controller.signal
+            }).then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+                return response.text();
+            }).then((html) => {
+                outputDiv.innerHTML = html;
+            }).catch((err) => {
+                if (err.name === "AbortError") {
+                    return;
+                }
+                console.error(`Fetch problem: ${err}`);
+                outputDiv.innerHTML = "Server Error";
+            }).finally(() => {
+                controller = null;
+            });
+        }
+    </script>
+    <p>
+        I like building stuff from the ground up
+    </p>
+    <img class="clamped-width" src="/assets/chadhash.png" alt="c gigachad">
+    <img style="padding-top: 10px; padding-bottom: 20px" class="clamped-width"
+         src="/assets/tuxsuc.jpg" alt="tux succ">
+
+    <label for="phone-number-slider"><strong>Input your phone number</strong></label>
+    <div id="number">+0 (000) 000-0000</div>
+    <input style="display: block" id="phone-number-slider" type="range"
+           min="0"
+           max="99999999999"
+           step="1"
+           value="0"
+    />
+    <button style="display: inline">Send</button>
+    (this button doesn't do anything)
+    <script>
+        function phonify(s) {
+            s = s.padStart(11, "0");
+            const a = s.charAt(0);
+            const b = s.substring(1, 4);
+            const c = s.substring(4, 7);
+            const d = s.substring(7, 11);
+            return `+${a} (${b}) ${c}-${d}`;
+        }
+
+        const slider = document.getElementById("phone-number-slider");
+        slider.addEventListener("input", () => {
+            document.getElementById("number").innerHTML = phonify(slider.value);
         });
-    }
-</script>
+    </script>
+    <div style="height: 120vh; width: 100%; position: relative; display: flex; flex-direction: column;
+     margin-top: 2em; justify-content: center; align-items: center">
+        <div id="insrisp">
+        </div>
+        <span style="z-index: 0; font-weight: 900; font-size: 54pt">It never stops raining in Saint-Petersburg.</span>
+    </div>
+    <script>
+        (() => {
+            const insrisp = document.getElementById("insrisp");
+            const plop = (event) => {
+                event.target.style.backgroundColor = "blue";
+            };
+            const addRainDrop = (pos) => {
+                const div = document.createElement("div");
+                div.classList.add("rain-drop");
+                div.style.left = pos + "px";
+                div.style.animationDelay = -Math.random() * 2 + "s";
+                insrisp.appendChild(div);
 
-<img class="clamped-width" src="/assets/chadhash.png" alt="c gigachad">
-<img class="clamped-width" src="/assets/tuxsuc.jpg" alt="tux succ">
-<strong>Input your phone number</strong>
-<div id="number">+0 (000) 000-0000</div>
-<input style="display: block" id="phone-number-slider" type="range"
-       min="0"
-       max="99999999999"
-       step="1"
-       value="0"
-/>
-<button style="display: inline">Send</button> (this button doesn't do anything)
-<script>
-    function phonify(s) {
-        s = s.padStart(11, "0");
-        const a = s.charAt(0);
-        const b = s.substring(1, 4);
-        const c = s.substring(4, 7);
-        const d = s.substring(7, 11);
-        return `+${a} (${b}) ${c}-${d}`;
+                //div.addEventListener("animationend", plop);
+            };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const width = insrisp.offsetWidth;
+                        for (let i = 0; i < width / 25; ++i) {
+                            addRainDrop(width * (Math.random() * 1.2 - 0.1));
+                        }
+                    } else {
+                        insrisp.innerHTML = "";
+                    }
+                });
+            });
+            observer.observe(insrisp);
+        })();
+    </script>
+</div>
+<style>
+    footer {
+        background-color: #070F19;
     }
-
-    const slider = document.getElementById("phone-number-slider");
-    slider.addEventListener("input", () => {
-        document.getElementById("number").innerHTML = phonify(slider.value);
-    });
-</script>
+</style>

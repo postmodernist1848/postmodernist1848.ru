@@ -39,12 +39,6 @@ var pathToFile = map[string]string{
 
 	"/about":  "about.html",
 	"/linalg": "linalg.html",
-
-	"/articles/manifesto": "manifesto.html",
-	"/articles/haskell":   "haskell.html",
-	"/articles/ieee754":   "ieee754.html",
-	"/articles/history":   "history.html",
-	"/articles/cfcracker": "cfcracker.html",
 }
 
 func getContents(path string) ([]byte, error) {
@@ -82,6 +76,16 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	contents, err := getContents(r.URL.Path)
 	if err != nil {
+		contents = notFoundContents
+		w.WriteHeader(http.StatusNotFound)
+	}
+	serveContents(w, r, contents)
+}
+
+func serveArticles(w http.ResponseWriter, r *http.Request) {
+	contents, err := os.ReadFile("." + r.URL.Path + ".html")
+	if err != nil {
+		log.Println(err)
 		contents = notFoundContents
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -185,6 +189,7 @@ func main() {
 	httpsPort := "443"
 
 	http.HandleFunc("/", serveRoot)
+	http.HandleFunc("/articles/", serveArticles)
 	http.HandleFunc("/log", serveLog)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)

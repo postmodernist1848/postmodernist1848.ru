@@ -12,12 +12,6 @@ html, body {
     height: 100%;
 }
 
-#contents {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
 article {
     width: min(99vw, 1000px);
     display: flex;
@@ -29,6 +23,10 @@ code {
     background-color: #343942;
     padding: 4px;
     border-radius: 10px;
+}
+
+pre > code {
+    padding: 0;
 }
 
 fieldset {
@@ -68,9 +66,8 @@ img {
 }
 
 footer {
-    position: static;
     text-align: right;
-    margin-right: 1em;
+    padding-right: 1em;
 }
 
 @media screen and (max-width: 750px) {
@@ -105,47 +102,13 @@ select {
     color: black;
 }
 
-input {
+textarea, input {
     accent-color: black;
     color: #181818;
     background: lightgray;
 }
 
 .clamped-width {
-    width: min(99vw, 1000px);
-}
-
-#paste p {
-    font-size: unset;
-}
-#paste h5, h6 {
-    margin-bottom: 0.5em;
-}
-#paste h6 {
-    margin-top: 1em;
-}
-#paste h5 {
-    margin-top: 1em;
-    cursor: pointer;
-}
-
-#paste h5:hover {
-    background-color: #444;
-}
-
-#paste div.hidden {
-    display: none;
-}
-
-#paste div.notes {
-    margin-bottom: 2em;
-}
-
-#hint {
-    color: gray;
-    font-size: 0.5em;
-    margin-top: 0.5em;
-    padding: 1em;
-    border-radius: 10px;
-    border: dashed gray;
+    width: 100vw;
+    max-width: 1000px;
 }

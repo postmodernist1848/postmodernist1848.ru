@@ -1,36 +1,75 @@
+<style>
+    #paste p {
+        font-size: unset;
+    }
+
+    #paste h5, h6 {
+        margin-bottom: 0.5em;
+    }
+
+    #paste h6 {
+        margin-top: 1em;
+    }
+
+    #paste h5 {
+        margin-top: 1em;
+        cursor: pointer;
+    }
+
+    #paste h5:hover {
+        background-color: #444;
+    }
+
+    #paste div.hidden {
+        display: none;
+    }
+
+    #paste div.notes {
+        margin-bottom: 2em;
+    }
+
+    #hint {
+        color: gray;
+        font-size: 0.5em;
+        margin-top: 0.5em;
+        padding: 1em;
+        border-radius: 10px;
+        border: dashed gray;
+    }
+</style>
 <div id="paste">
     {{.contents}}
 </div>
 <script>
-    const h5s = document.getElementsByTagName('h5');
+    const h5s = document.getElementsByTagName("h5");
 
     let currentH5 = h5s[0];
     let currentNode = currentH5.nextSibling;
-    let divWrapper = document.createElement('div');
+    let divWrapper = document.createElement("div");
 
     while (currentNode !== null) {
         const nextNode = currentNode.nextSibling;
 
         if (currentNode.tagName === "H5") {
-            currentH5.insertAdjacentElement('afterend', divWrapper);
+            currentH5.insertAdjacentElement("afterend", divWrapper);
             currentH5 = currentNode;
-            divWrapper = document.createElement('div');
+            divWrapper = document.createElement("div");
         } else {
             divWrapper.appendChild(currentNode);
         }
         currentNode = nextNode;
     }
-    currentH5.insertAdjacentElement('afterend', divWrapper);
+    currentH5.insertAdjacentElement("afterend", divWrapper);
 
     for (let i = 0; i < h5s.length; i++) {
         // show the last one
-        h5s[i].nextElementSibling.classList.add('notes');
+        h5s[i].nextElementSibling.classList.add("notes");
         if (i !== h5s.length - 1) {
-            h5s[i].nextElementSibling.classList.add('hidden');
+            h5s[i].nextElementSibling.classList.add("hidden");
         }
-        h5s[i].addEventListener("click", function() {
+        h5s[i].addEventListener("click", function () {
             const content = this.nextElementSibling;
-            content.classList.toggle('hidden');
+            content.classList.toggle("hidden");
         });
     }
     h5s[h5s.length - 1].scrollIntoView();
