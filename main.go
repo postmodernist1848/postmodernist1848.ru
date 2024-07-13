@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"unicode/utf8"
 
@@ -32,13 +33,12 @@ var notFoundContents = []byte("<h1>404: this page does not exist</h1>")
 var errorContents = []byte("<h1>Server error</h1>")
 
 var pathToFile = map[string]string{
-	"/fun":      "fun.html",
-	"/game":     "game.html",
-	"/chat":     "chat.html",
-	"/articles": "articles.html",
-
-	"/about":  "about.html",
-	"/linalg": "linalg.html",
+	"/fun":       "fun.html",
+	"/game":      "game.html",
+	"/chat":      "chat.html",
+	"/articles/": "articles.html",
+	"/about":     "about.html",
+	"/linalg":    "linalg.html",
 }
 
 func getContents(path string) ([]byte, error) {
@@ -74,18 +74,21 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 		return
 	}
-	contents, err := getContents(r.URL.Path)
-	if err != nil {
-		contents = notFoundContents
-		w.WriteHeader(http.StatusNotFound)
-	}
-	serveContents(w, r, contents)
-}
 
-func serveArticles(w http.ResponseWriter, r *http.Request) {
-	contents, err := os.ReadFile("." + r.URL.Path + ".html")
+	var contents []byte
+	var err error
+	if !strings.HasPrefix(r.URL.Path, "/articles/") || r.URL.Path == "/articles/" {
+		contents, err = getContents(r.URL.Path)
+	} else {
+		contents, err = os.ReadFile("." + r.URL.Path + ".html")
+		if err != nil {
+			log.Println(err)
+			contents = notFoundContents
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}
+
 	if err != nil {
-		log.Println(err)
 		contents = notFoundContents
 		w.WriteHeader(http.StatusNotFound)
 	}
@@ -189,7 +192,6 @@ func main() {
 	httpsPort := "443"
 
 	http.HandleFunc("/", serveRoot)
-	http.HandleFunc("/articles/", serveArticles)
 	http.HandleFunc("/log", serveLog)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
