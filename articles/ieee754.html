@@ -1,17 +1,22 @@
-<meta name="viewport" content="width=device-width, initial-scale=0.3">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
     table, th, td {
         border: 1px solid;
     }
+
     li {
         margin-top: 20px;
+    }
+
+    pre {
+        max-width: 100%;
+        overflow: scroll;
     }
 </style>
 <article>
     <div>
-    <h1>My quest to implement IEEE754 floating point numbers</h1>
+        <h1>My quest to implement IEEE754 floating point numbers</h1>
     </div>
 
     <p>
@@ -21,7 +26,8 @@
         So we had to implement IEEE754 as an assignment. We were told by Павел Скаков that only
         one student was able to finish this assignment with 100% test completion. So I was up for the challenge.
         High testosterone levels apparently make good programmers. (I am not joking. There's an actual correlation.
-        Being an engineer is generally a manly trait. Can't argue with biology. Though, autistic people of any gender can be
+        Being an engineer is generally a manly trait. Can't argue with biology. Though, autistic people of any gender
+        can be
         good at programming; but I digress)</p>
     <p>
         In this quest to implement IEEE754 numbers, a small library called
@@ -32,80 +38,91 @@
         so I won't bore you with another detailed explanation.
         Still, here's a quick refresher.
         A 32-bit single precision floating point number can be stored in a C struct like this:</p>
-        <pre><code class="language-c++">
-            struct Float32 {
-                uint32_t s : 1; // sign bit
-                uint32_t e : 8; // exponent
-                uint32_t m : 23; // mantissa
-            }
+    <pre><code class="language-c++">
+    struct Float32 {
+        uint32_t s : 1; // sign bit
+        uint32_t e : 8; // exponent
+        uint32_t m : 23; // mantissa
+    }
         </code></pre>
-        (bitfields allow using a set number of bits for every field)<table style="margin-top: 20px; margin-bottom: 30px">
-            <tr>
-                <th>Single-precision bit pattern</th>
-                <th>Value</th>
-            </tr>
-            <tr>
-                <td>0 < e < 255</td>
-                <td>(-1)<sup>s</sup> × 2<sup>e-127</sup> × 1.m (normal numbers)</td>
-            </tr>
-            <tr>
-                <td>e = 0; m ≠ 0 (at least one bit in m is nonzero)</td>
-                <td>(-1)<sup>s</sup> × 2<sup>-126</sup> × 0.m (subnormal numbers)</td>
-            </tr>
-            <tr>
-                <td>s = 0; e = 255; m = 0
-                    (all bits in m are zero) </td>
-                <td>+INF (positive infinity)</td>
-            </tr>
-            <tr>
-                <td>s = 1; e = 255; m = 0
-                    (all bits in m are zero) </td>
-                <td>-INF (negative infinity)</td>
-            </tr>
-            <tr>
-                <td>e = 255; m ≠ 0
-                    (at least one bit in m is nonzero</td>
-                <td>NaN (Not-a-Number)</td>
-            </tr>
-        </table>
+    (bitfields allow using a set number of bits for every field)
+    <table style="margin-top: 20px; margin-bottom: 30px">
+        <tr>
+            <th>Single-precision bit pattern</th>
+            <th>Value</th>
+        </tr>
+        <tr>
+            <td>0 < e < 255</td>
+            <td>(-1)<sup>s</sup> × 2<sup>e-127</sup> × 1.m (normal numbers)</td>
+        </tr>
+        <tr>
+            <td>e = 0; m ≠ 0 (at least one bit in m is nonzero)</td>
+            <td>(-1)<sup>s</sup> × 2<sup>-126</sup> × 0.m (subnormal numbers)</td>
+        </tr>
+        <tr>
+            <td>s = 0; e = 255; m = 0
+                (all bits in m are zero)
+            </td>
+            <td>+INF (positive infinity)</td>
+        </tr>
+        <tr>
+            <td>s = 1; e = 255; m = 0
+                (all bits in m are zero)
+            </td>
+            <td>-INF (negative infinity)</td>
+        </tr>
+        <tr>
+            <td>e = 255; m ≠ 0
+                (at least one bit in m is nonzero
+            </td>
+            <td>NaN (Not-a-Number)</td>
+        </tr>
+    </table>
     <h2 style="margin-bottom: 0">Rounding</h2>
     <p>
         Weirdly, we have to discuss rounding first, because this is going to define
         the operations that we do.
-        I've implemented four rounding modes:<ol>
-            <li>
-                To nearest, ties to even:<br>
-                Round to closest. If directly at the middle, round to even.
-                This can be implemented by maintaining two boolean variables which I call
-                first_rounded_bit and sticky_bit. first_rounded_bit is the most significant bit
-                that got rounded off and sticky_bit is 0 if and only if all bits after first rounded bit are zero
-                (like bitwise OR of all of them). This works like this:<br>
-                Example 1: ...01<strong>|</strong>110101<br>
-                "<strong>|</strong>" denotes the place we want to round off, so we want to get something that ends with ...01 + rounding.
-                1 right after "<strong>|</strong>" is the first_rounded_bit.
-                After that, there are some non-zero bits, so sticky_bit = 1.
-                Here, we can see that, when sticky_bit == 1 and first_rounded_bit == 1, we round up.
-                Example 2: ...01<strong>|</strong>000000<br>
-                Here, first_rounded_bit = 1 and sticky_bit = 0, which means we are exactly in between ...10 and ...00.
-                Think of it as rounding (...).5 to nearest even integer.
-                (For example, you can read on why round() in Python does this)
-                Here, we just check if ...01 is even and round up (add 1) if it is. In this case ...01 & 1 == 1, so it's odd.
-                <br>
-                Example 3: ...01<strong>|</strong>01110 first_rounded_bit == 0 sticky_bit == 1<br>
-                Example 4: ...01<strong>|</strong>00000 first_rounded_bit == 0 sticky_bit == 0<br>
-                You can see how we don't need to do anything in these cases (that is, round down, discard the rounded bits).</li>
-            <li>
-                Towards zero:<br>
-                The easiest rounding mode. Just don't do anything and discard the rounded bits.</li>
-            <li>
-                Towards positive infinity:<br>
-                We round down in every case, but one:
-                if first_rounded_bit == 1 and sticky_bit == 1 and the number is positive,
-                that is, we actually round UP, not as an absolute value.</li>
-            <li>Towards negative infinity:<br>
-                Same as 3, but only for negative numbers.</li>
-        </ol>
+        I've implemented four rounding modes:
     </p>
+    <ol>
+        <li>
+            To nearest, ties to even:<br>
+            Round to closest. If directly at the middle, round to even.
+            This can be implemented by maintaining two boolean variables which I call
+            first_rounded_bit and sticky_bit. first_rounded_bit is the most significant bit
+            that got rounded off and sticky_bit is 0 if and only if all bits after first rounded bit are zero
+            (like bitwise OR of all of them). This works like this:<br>
+            Example 1: ...01<strong>|</strong>110101<br>
+            "<strong>|</strong>" denotes the place we want to round off, so we want to get something that ends with
+            ...01 + rounding.
+            1 right after "<strong>|</strong>" is the first_rounded_bit.
+            After that, there are some non-zero bits, so sticky_bit = 1.
+            Here, we can see that, when sticky_bit == 1 and first_rounded_bit == 1, we round up.
+            Example 2: ...01<strong>|</strong>000000<br>
+            Here, first_rounded_bit = 1 and sticky_bit = 0, which means we are exactly in between ...10 and ...00.
+            Think of it as rounding (...).5 to nearest even integer.
+            (For example, you can read on why round() in Python does this)
+            Here, we just check if ...01 is even and round up (add 1) if it is. In this case ...01 & 1 == 1, so it's
+            odd.
+            <br>
+            Example 3: ...01<strong>|</strong>01110 first_rounded_bit == 0 sticky_bit == 1<br>
+            Example 4: ...01<strong>|</strong>00000 first_rounded_bit == 0 sticky_bit == 0<br>
+            You can see how we don't need to do anything in these cases (that is, round down, discard the rounded bits).
+        </li>
+        <li>
+            Towards zero:<br>
+            The easiest rounding mode. Just don't do anything and discard the rounded bits.
+        </li>
+        <li>
+            Towards positive infinity:<br>
+            We round down in every case, but one:
+            if first_rounded_bit == 1 and sticky_bit == 1 and the number is positive,
+            that is, we actually round UP, not as an absolute value.
+        </li>
+        <li>Towards negative infinity:<br>
+            Same as 3, but only for negative numbers.
+        </li>
+    </ol>
 
     <h2>High-level idea for every operation</h2>
     <ul>
@@ -118,59 +135,62 @@
             so we can extract rounding information from last bits later
             (the other way around would do, too, and it is even more popular, it seems).</p>
             <p>
-            The difference between exponents can be pretty big (more than 2<sup>8</sup> for float32).
-            That would mean that shifting may exceed 64 bits that are available as normal C/C++ types.
-            Luckily, we don't actually need to shift that much. Think about it.
-            If we were to shift a small number
-            (difference of exponents greater than 23) we would exceed the precision bits of mantissa.
-            So we can assume that the result is the max operand and just round the result accordingly.
-            Considering that the first rounded bit can influence rounding,
-            it's best to change this condition to (a.e - b.e > 24) and handle other cases normally.</p>
+                The difference between exponents can be pretty big (more than 2<sup>8</sup> for float32).
+                That would mean that shifting may exceed 64 bits that are available as normal C/C++ types.
+                Luckily, we don't actually need to shift that much. Think about it.
+                If we were to shift a small number
+                (difference of exponents greater than 23) we would exceed the precision bits of mantissa.
+                So we can assume that the result is the max operand and just round the result accordingly.
+                Considering that the first rounded bit can influence rounding,
+                it's best to change this condition to (a.e - b.e > 24) and handle other cases normally.</p>
 
             <p>For subnormal numbers, we perform normalization. Basically, shift mantissa up until
-            there is 1 in the implicit 0's place while changing exponent accordingly.
-            After that we can insert the implicit one (for normal numbers) and
-            perform integer addition.
-            When we set bit 24 (for float32) we get a number of form 1.(last 23 bits) which is a number in range [1, 2).</p>
+                there is 1 in the implicit 0's place while changing exponent accordingly.
+                After that we can insert the implicit one (for normal numbers) and
+                perform integer addition.
+                When we set bit 24 (for float32) we get a number of form 1.(last 23 bits) which is a number in range [1,
+                2).</p>
 
-            <p>The result of addition may be greater than or equal to 2 (indicated by 25-th bit being set for float32).</p>
+            <p>The result of addition may be greater than or equal to 2 (indicated by 25-th bit being set for
+                float32).</p>
         </li>
         <li>Subtraction:<p>
             By subtraction, I mean addition of numbers of different sign. Actual (-) operation
             can be implemented trivially as adding negated second operand, i. e. a - b = a + (-b).</p>
 
             <p>
-            In this case we need to perform integer subtraction instead of addition.
-            The (a.e - b.e > 24) became (a.e - b.e > 25) in my implementation, because of the edge case
-            where a.e - b.e == 25 and the first rounded bit becomes 0 after borrowing for subtraction.
-            An example of subtraction in such case can be found in the big code comment
-            in add() definition.</p>
+                In this case we need to perform integer subtraction instead of addition.
+                The (a.e - b.e > 24) became (a.e - b.e > 25) in my implementation, because of the edge case
+                where a.e - b.e == 25 and the first rounded bit becomes 0 after borrowing for subtraction.
+                An example of subtraction in such case can be found in the big code comment
+                in add() definition.</p>
         </li>
         <li>Multiplication:<p>
-                Normalize subnormals, add in implicit 1.<br>
-                Here, the obvious idea is to add the exponents
-                as you would do in algebra and then multiply the mantissas:
-                <br>
-                24-bit number × 24-bit number
-                <br>
-                The resulting number is up to 48 bits, so we need to normalize it.</p>
+            Normalize subnormals, add in implicit 1.<br>
+            Here, the obvious idea is to add the exponents
+            as you would do in algebra and then multiply the mantissas:
+            <br>
+            24-bit number × 24-bit number
+            <br>
+            The resulting number is up to 48 bits, so we need to normalize it.</p>
         </li>
         <li>Division:<p>Similar to multiplication, but we need to perform a floating point division on
-            mantissas. This can be done by shifting first operand 24 bits right (for float32) and doing integer division.</p>
+            mantissas. This can be done by shifting first operand 24 bits right (for float32) and doing integer
+            division.</p>
 
 
-
-<pre><code class="language-c++">            // (24-25 bits).(24 '0' bits) / 1.(23 bits)
-            // if am >= bm then result is 1.(24 bits)
-            uint64_t resm = dividend / divisor;
-            uint64_t rem = dividend % divisor;
-            bool first_rounded_bit = resm & 1;
-            bool sticky_bit = rem != 0;
-            resm >>= 1;</code></pre>
+            <pre><code class="language-c++">// (24-25 bits).(24 '0' bits) / 1.(23 bits)
+// if am >= bm then result is 1.(24 bits)
+uint64_t resm = dividend / divisor;
+uint64_t rem = dividend % divisor;
+bool first_rounded_bit = resm & 1;
+bool sticky_bit = rem != 0;
+resm >>= 1;</code></pre>
 
             This way we get the first 24 bits of the fractional part.
             The remainder allows us to get the information about
-            the rest of the fractional part needed for rounding.</li>
+            the rest of the fractional part needed for rounding.
+        </li>
     </ul>
     <p>
         After all the described operations we need to normalize the number in case the result is ≥ 2.0 or < 1.</p>
@@ -202,20 +222,20 @@ else
         The thing is, when you add zeros of different sign, the result depends on the rounding.
         The result is +0 except for rounding towards negative infinity when it's -0.
         And you also have this:</p>
-        <table>
-            <tr>
-                <td>-0 + x = x</td>
-            </tr>
-            <tr>
-                <td>+0 + x = x, x ≠ -0</td>
-            </tr>
-            <tr>
-                <td>+0 + -0 = +0</td>
-            </tr>
-        </table>
+    <table>
+        <tr>
+            <td>-0 + x = x</td>
+        </tr>
+        <tr>
+            <td>+0 + x = x, x ≠ -0</td>
+        </tr>
+        <tr>
+            <td>+0 + -0 = +0</td>
+        </tr>
+    </table>
     <p>
         So you kind of have to 'if' it:</p>
-        <pre><code class="language-c++">    if (b.is_zero())
+    <pre><code class="language-c++">    if (b.is_zero())
     {
         if (rounding == ROUNDING_TOWARD_NEG_INFINITY
             && a.is_zero() && a.s != b.s)
@@ -230,6 +250,6 @@ else
         Code coming soon...
     </p>
     <script>
-        hljs.highlightAll()
+        hljs.highlightAll();
     </script>
 </article>
