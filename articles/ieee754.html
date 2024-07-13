@@ -1,15 +1,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=0.3">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+    table, th, td {
+        border: 1px solid;
+    }
+    li {
+        margin-top: 20px;
+    }
+</style>
 <article>
-    <style>
-        table, th, td {
-            border: 1px solid;
-        }
-        li {
-            margin-top: 20px;
-        }
-    </style>
     <div>
     <h1>My quest to implement IEEE754 floating point numbers</h1>
     </div>
@@ -114,7 +114,7 @@
             (m << 1 effectively doubles the number, so we can subtract 1 from e to preserve the value;
             same with m >> 1)
             We'll shift the bigger (as in absolute value)
-            number's mantissa up to match the smaller exponent
+            number's mantissa up to match the smaller exponent,
             so we can extract rounding information from last bits later
             (the other way around would do, too, and it is even more popular, it seems).</p>
             <p>
