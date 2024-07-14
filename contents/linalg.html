@@ -1,5 +1,5 @@
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <style>
     fieldset {
         opacity: 80%;
@@ -193,7 +193,9 @@ for row in tensor_prod:
 
 #далее нужно симметризовать и умножить на нормирующий фактор (p + r)!/p!*r! = (1 + 1)!/1!*1! = 2</code></pre>
     <script>
-        hljs.highlightAll()
+        (() => {
+            hljs.highlightAll()
+        })()
         const indicesCountElement = document.getElementById('indices-count')
         const dimensionsElement = document.getElementById('dimensions')
         function selectIndexCount(idx) {

@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"html"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -29,7 +30,6 @@ var indexTemplate = template.Must(template.New("index").Parse(indexTemplateStrin
 //go:embed log.html.tmpl
 var logTemplateString string
 var logTemplate = template.Must(template.New("log").Parse(logTemplateString))
-var notFoundContents = []byte("<h1>404: this page does not exist</h1>")
 var errorContents = []byte("<h1>Server error</h1>")
 
 var pathToFile = map[string]string{
@@ -41,26 +41,58 @@ var pathToFile = map[string]string{
 	"/linalg":    "linalg.html",
 }
 
-func getContents(path string) ([]byte, error) {
+func getContents(path string) (*os.File, error) {
 	requestedPage, ok := pathToFile[path]
 	if !ok {
 		log.Printf("Not in list: `%s`", path)
-		return nil, errors.New(fmt.Sprintf("Not in list: `%s`", path))
+		return nil, fmt.Errorf("not in list: `%s`", path)
 	}
 	filepath := "contents/" + requestedPage
-	content, err := os.ReadFile(filepath)
-	if err != nil {
-		log.Printf("Failed to read: `%s`", filepath)
-		return nil, err
-	}
-	return content, nil
+	return os.Open(filepath)
 }
 
-func serveContents(w http.ResponseWriter, r *http.Request, contents []byte) {
-	data := map[string]interface{}{
-		"contents": template.HTML(contents),
+func serveContents(w http.ResponseWriter, r *http.Request, reader io.Reader) {
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	err := indexTemplate.ExecuteTemplate(w, "index", data)
+
+	var builder strings.Builder
+	var headProcessingErrors []error = nil
+	doc.Find("style, link, meta").Each(func(_ int, item *goquery.Selection) {
+		HTML, err := goquery.OuterHtml(item)
+		if err != nil {
+			headProcessingErrors = append(headProcessingErrors, err)
+		} else {
+			builder.WriteString(HTML)
+		}
+		item.Remove()
+	})
+	if headProcessingErrors != nil {
+		log.Println(headProcessingErrors)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// goquery add html, head and body tags if they are not present
+	head, err := doc.Find("head").Html()
+	if err != nil {
+		log.Println("Could not render head", r.URL.Path, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	body, err := doc.Find("body").Html()
+	if err != nil {
+		log.Println("Could not render body", r.URL.Path, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]interface{}{
+		"head":     template.HTML(builder.String()),
+		"contents": template.HTML(head + body),
+	}
+	err = indexTemplate.ExecuteTemplate(w, "index", data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("Failed to execute template on %s", r.URL.Path)
@@ -75,24 +107,23 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var contents []byte
+	var file *os.File
 	var err error
 	if !strings.HasPrefix(r.URL.Path, "/articles/") || r.URL.Path == "/articles/" {
-		contents, err = getContents(r.URL.Path)
+		file, err = getContents(r.URL.Path)
 	} else {
-		contents, err = os.ReadFile("." + r.URL.Path + ".html")
-		if err != nil {
-			log.Println(err)
-			contents = notFoundContents
-			w.WriteHeader(http.StatusNotFound)
-		}
+		file, err = os.Open("." + r.URL.Path + ".html")
 	}
 
 	if err != nil {
-		contents = notFoundContents
 		w.WriteHeader(http.StatusNotFound)
+		file, err = os.Open("contents/not-found.html")
+		if err != nil {
+			log.Println("not-found.html not found")
+			return
+		}
 	}
-	serveContents(w, r, contents)
+	serveContents(w, r, file)
 }
 
 /* insert into the log template */
@@ -122,7 +153,7 @@ func serveLog(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	serveContents(w, r, logHTML)
+	serveContents(w, r, bytes.NewReader(logHTML))
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request) {
