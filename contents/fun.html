@@ -25,7 +25,7 @@
 
     @keyframes fall {
         0% {
-            transform: rotate(var(--rotation-angle)) translateY(-100%);
+            transform: rotate(var(--rotation-angle)) translateY(-200%);
         }
         50% {
             transform: rotate(var(--rotation-angle)) translateY(calc(var(--fall-end) - var(--height))) scale(1);
@@ -191,7 +191,7 @@
         const div = document.createElement("div");
         div.classList.add("rain-drop");
         div.style.left = pos + "px";
-        div.style.animationDelay = -Math.random() * 2 + "s";
+        div.style.animationDelay = -Math.random() * 1.9 + "s";
         insrisp.appendChild(div);
         //const angle = parseInt(getComputedStyle(div).getPropertyValue("--rotation-angle")) * Math.PI / 180;
         //const offset = Math.tan(angle) * insrispText.offsetTop;
