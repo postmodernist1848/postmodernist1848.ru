@@ -195,6 +195,7 @@ func main() {
 	http.HandleFunc("/log", serveLog)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
+	http.HandleFunc("/.well-known/", serveStaticFile)
 	http.HandleFunc("/api/chat-messages", serveChatMessages)
 	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
