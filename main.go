@@ -107,6 +107,11 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Path == "/favicon.ico" {
+		http.ServeFile(w, r, "assets/favicon.ico")
+		return
+	}
+
 	var file *os.File
 	var err error
 	if !strings.HasPrefix(r.URL.Path, "/articles/") || r.URL.Path == "/articles/" {
