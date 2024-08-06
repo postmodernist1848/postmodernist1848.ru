@@ -30,7 +30,6 @@ var indexTemplate = template.Must(template.New("index").Parse(indexTemplateStrin
 //go:embed log.html.tmpl
 var logTemplateString string
 var logTemplate = template.Must(template.New("log").Parse(logTemplateString))
-var errorContents = []byte("<h1>Server error</h1>")
 
 var pathToFile = map[string]string{
 	"/fun":       "fun.html",
@@ -99,6 +98,26 @@ func serveContents(w http.ResponseWriter, r *http.Request, reader io.Reader) {
 	}
 }
 
+func serveNotFound(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	file, err := os.Open("contents/not-found.html")
+	if err != nil {
+		log.Println("contents/not-found.html not found")
+		return
+	}
+	serveContents(w, r, file)
+}
+
+func serveError(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusInternalServerError)
+	file, err := os.Open("contents/error.html")
+	if err != nil {
+		log.Println("contents/error.html not found")
+		return
+	}
+	serveContents(w, r, file)
+}
+
 /* the default is getting a file path from map and
  * inserting its contents into the index template */
 func serveRoot(w http.ResponseWriter, r *http.Request) {
@@ -121,12 +140,8 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		file, err = os.Open("contents/not-found.html")
-		if err != nil {
-			log.Println("not-found.html not found")
-			return
-		}
+		serveNotFound(w, r)
+		return
 	}
 	serveContents(w, r, file)
 }
@@ -145,17 +160,16 @@ func processRawLogHTML(rawHTML []byte) ([]byte, error) {
 
 func serveLog(w http.ResponseWriter, r *http.Request) {
 	rawLogHTML, err := os.ReadFile("log.html")
-	var logHTML []byte
 	if err != nil {
 		log.Println(err)
-		logHTML = errorContents
-		w.WriteHeader(http.StatusServiceUnavailable)
-	} else {
-		logHTML, err = processRawLogHTML(rawLogHTML)
-		if err != nil {
-			log.Printf("Failed to process /log HTML")
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+		serveError(w, r)
+		return
+	}
+	logHTML, err := processRawLogHTML(rawLogHTML)
+	if err != nil {
+		log.Println("Failed to process /log HTML:", err)
+		serveError(w, r)
+		return
 	}
 
 	serveContents(w, r, bytes.NewReader(logHTML))
