@@ -1,0 +1,14 @@
+services:
+  postmodernist1848.ru:
+    image: postmodernist1848.ru-server:latest
+    build: .
+    ports:
+      - "6969:80"
+    volumes:
+      - /var/www/postmodernist1848.ru/database.db:/database.db
+      - /var/www/postmodernist1848.ru/log.html:/log.html
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

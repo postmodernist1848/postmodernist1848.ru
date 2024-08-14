@@ -189,6 +189,7 @@ type ChatMessage struct {
 func serveChatMessages(w http.ResponseWriter, r *http.Request) {
 	row, err := database.Query("SELECT * FROM message ORDER BY id")
 	if err != nil {
+	// FIXME: do not crash
 		log.Fatal(err)
 	}
 	defer row.Close()
@@ -213,7 +214,7 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&msg)
 	if err != nil {
 		log.Println("failed to parse message: ", err)
-		w.WriteHeader(http.StatusNotFound)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if l := utf8.RuneCountInString(msg.Text); l >= 1848 {
@@ -239,7 +240,6 @@ func insertChatMessage(message ChatMessage) error {
 
 func main() {
 	httpPort := "80"
-	httpsPort := "443"
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
@@ -273,18 +273,11 @@ func main() {
 		}
 	}()
 
-	log.Println("Opening database...")
 	var err error
 	database, err = sql.Open("sqlite3", "database.db")
 	if err != nil {
 		log.Fatal("Failed to open sqlite database: ", err)
 	}
 
-	log.Println("Listening for http on", httpPort)
-	go func() {
-		log.Fatal(http.ListenAndServe(":"+httpPort, nil))
-	}()
-
-	log.Println("Listening for https on", httpsPort)
-	log.Fatal(http.ListenAndServeTLS(":"+httpsPort, "server.crt", "server.key", nil))
+	log.Fatal(http.ListenAndServe(":"+httpPort, nil))
 }
