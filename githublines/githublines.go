@@ -110,7 +110,7 @@ const countlines_repos_limit = 100
 
 var countlines_current_requests atomic.Int32
 
-func ServeCountlines(w http.ResponseWriter, r *http.Request) {
+func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 
 	if countlines_current_requests.Load() >= countlines_requests_limit {
 		fmt.Fprint(w, "Too many requests are being processed currently. Try again later.")

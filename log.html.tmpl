@@ -4,16 +4,17 @@
     }
 
     #paste h5, h6 {
-        margin-bottom: 0.5em;
+        margin-bottom: 0.5rem;
     }
 
     #paste h6 {
-        margin-top: 1em;
+        margin-top: 1rem;
     }
 
     #paste h5 {
-        margin-top: 1em;
+        margin-top: 1rem;
         cursor: pointer;
+        background-color: #222;
     }
 
     #paste h5:hover {
@@ -24,47 +25,31 @@
         display: none;
     }
 
-    #paste div.notes {
-        margin-bottom: 2em;
+    #paste div.note {
+        margin-bottom: 2rem;
     }
 
     #hint {
         color: gray;
-        font-size: 0.5em;
-        margin-top: 0.5em;
+        font-size: 0.5rem;
+        margin-top: 0.5rem;
         padding: 1em;
         border-radius: 10px;
         border: dashed gray;
     }
 </style>
 <div id="paste">
-    {{.contents}}
+    {{range .}}<h5>{{.Date}}</h5>
+    <div class="note">{{.HTML}}</div>
+    {{end}}
 </div>
 <script>
     const h5s = document.getElementsByTagName("h5");
 
-    let currentH5 = h5s[0];
-    let currentNode = currentH5.nextSibling;
-    let divWrapper = document.createElement("div");
-
-    while (currentNode !== null) {
-        const nextNode = currentNode.nextSibling;
-
-        if (currentNode.tagName === "H5") {
-            currentH5.insertAdjacentElement("afterend", divWrapper);
-            currentH5 = currentNode;
-            divWrapper = document.createElement("div");
-        } else {
-            divWrapper.appendChild(currentNode);
-        }
-        currentNode = nextNode;
-    }
-    currentH5.insertAdjacentElement("afterend", divWrapper);
-
     for (let i = 0; i < h5s.length; i++) {
-        // show the last one
         h5s[i].nextElementSibling.classList.add("notes");
         if (i !== h5s.length - 1) {
+            // show the last one
             h5s[i].nextElementSibling.classList.add("hidden");
         }
         h5s[i].addEventListener("click", function () {

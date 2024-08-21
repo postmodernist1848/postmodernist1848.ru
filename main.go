@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	_ "github.com/mattn/go-sqlite3"
 	"html"
 	"html/template"
 	"io"
@@ -14,13 +15,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
-	"syscall"
-	"unicode/utf8"
-
-	_ "github.com/mattn/go-sqlite3"
 	"postmodernist1848.ru/githublines"
 	"postmodernist1848.ru/old"
+	"strings"
+	"syscall"
 )
 
 //go:embed index.html.tmpl
@@ -146,33 +144,120 @@ func serveRoot(w http.ResponseWriter, r *http.Request) {
 	serveContents(w, r, file)
 }
 
-/* insert into the log template */
-func processRawLogHTML(rawHTML []byte) ([]byte, error) {
-	var tpl bytes.Buffer
-	data := map[string]interface{}{
-		"contents": template.HTML(rawHTML),
+type Log = struct {
+	Date string        `json:"date"`
+	HTML template.HTML `json:"html"`
+}
+
+func getLogs() ([]Log, error) {
+	rows, err := database.Query(`SELECT date, html FROM note`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query note table: %w", err)
 	}
-	if err := logTemplate.Execute(&tpl, data); err != nil {
-		return nil, err
+	var logs []Log
+	for rows.Next() {
+		var date string
+		var HTML string
+		err = rows.Scan(&date, &HTML)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read note table row: %w", err)
+		}
+		logs = append(logs, Log{date, template.HTML(HTML)})
 	}
-	return tpl.Bytes(), nil
+	return logs, nil
 }
 
 func serveLog(w http.ResponseWriter, r *http.Request) {
-	rawLogHTML, err := os.ReadFile("log.html")
+
+	logs, err := getLogs()
 	if err != nil {
-		log.Println(err)
+		log.Println("Could not get logs:", err)
 		serveError(w, r)
 		return
 	}
-	logHTML, err := processRawLogHTML(rawLogHTML)
-	if err != nil {
+
+	logHTML := &bytes.Buffer{}
+	if err = logTemplate.Execute(logHTML, logs); err != nil {
 		log.Println("Failed to process /log HTML:", err)
 		serveError(w, r)
 		return
 	}
 
-	serveContents(w, r, bytes.NewReader(logHTML))
+	serveContents(w, r, logHTML)
+}
+
+func rewriteLogs(logs []Log) error {
+	tx, err := database.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`DELETE FROM note`)
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`INSERT INTO note(date, html) VALUES (?, ?)`)
+	if err != nil {
+		return err
+	}
+	for _, l := range logs {
+		_, err = stmt.Exec(l.Date, l.HTML)
+		if err != nil {
+			return err
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func logHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		logs, err := getLogs()
+		if err != nil {
+			log.Println("Could not get logs:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		JSON, err := json.Marshal(logs)
+		if err != nil {
+			log.Println("Could not marshal logs JSON:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Write(JSON)
+	} else if r.Method == "POST" {
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			w.WriteHeader(http.StatusUnauthorized)
+		}
+		token, err := os.ReadFile("api_token")
+		if err != nil {
+			log.Println("Could not read token file:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if username != "postmodernist1848" || string(token) != password {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		var logs []Log
+		err = json.NewDecoder(r.Body).Decode(&logs)
+		if err != nil {
+			log.Println("Could not unmarshal logs JSON:", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		log.Println("Rewriting logs...")
+		err = rewriteLogs(logs)
+		if err != nil {
+			log.Println("Could not rewrite logs:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	} else {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request) {
@@ -186,11 +271,11 @@ type ChatMessage struct {
 	Text   string `json:"text"`
 }
 
-func serveChatMessages(w http.ResponseWriter, r *http.Request) {
+func chatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	row, err := database.Query("SELECT * FROM message ORDER BY id")
 	if err != nil {
-	// FIXME: do not crash
-		log.Fatal(err)
+		log.Println("Failed to retrieve messages: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 	defer row.Close()
 	w.Write([]byte("<ul style=\"list-style: none\">"))
@@ -198,6 +283,7 @@ func serveChatMessages(w http.ResponseWriter, r *http.Request) {
 		var id int
 		var author string
 		var text string
+		// FIXME: handle errors
 		row.Scan(&id, &author, &text)
 		w.Write([]byte("<li>"))
 		w.Write([]byte(html.EscapeString(author)))
@@ -217,38 +303,37 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if l := utf8.RuneCountInString(msg.Text); l >= 1848 {
-		log.Printf("Message too long (%v runes)\n", l)
+	if l := len(msg.Text); l >= 1848 {
+		log.Printf("Message too long (%v bytes)\n", l)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	log.Println("Received message: ", msg)
-	insertChatMessage(msg)
+	if err = insertChatMessage(msg); err != nil {
+		log.Println("Failed to insert chat message: ", err)
+	}
 }
 
 var database *sql.DB
 
 func insertChatMessage(message ChatMessage) error {
-	query := `INSERT INTO message(author, text) VALUES (?, ?)`
-	statement, err := database.Prepare(query)
-	if err != nil {
-		return err
-	}
-	_, err = statement.Exec(message.Author, message.Text)
+	_, err := database.Exec(`INSERT INTO message(author, text) VALUES (?, ?)`,
+		message.Author, message.Text)
 	return err
 }
 
 func main() {
-	httpPort := "80"
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
 	http.HandleFunc("/.well-known/", serveStaticFile)
-	http.HandleFunc("/api/chat-messages", serveChatMessages)
+
+	http.HandleFunc("/api/chat-messages", chatMessagesHandler)
 	http.HandleFunc("/api/send-message", chatSendHandler)
-	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
+	http.HandleFunc("/api/countlines/", githublines.CountlinesHandler)
+	http.HandleFunc("/api/log", logHandler)
 
 	// old uses current /api
 	http.HandleFunc("/old/", old.ServeRoot)
@@ -262,7 +347,7 @@ func main() {
 		sig := <-sigs
 		if database.Close() != nil {
 			log.Println("Failed to close database")
-			os.Exit(137)
+			os.Exit(1)
 		}
 		log.Println("Successfully closed the database")
 		switch sig {
@@ -279,5 +364,9 @@ func main() {
 		log.Fatal("Failed to open sqlite database: ", err)
 	}
 
+	migrate()
+
+	const httpPort = "80"
+	log.Println("Listening on port", httpPort)
 	log.Fatal(http.ListenAndServe(":"+httpPort, nil))
 }
