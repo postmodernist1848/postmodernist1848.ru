@@ -227,10 +227,11 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Write(JSON)
-	} else if r.Method == "POST" {
+	} else if r.Method == "PUT" {
 		username, password, ok := r.BasicAuth()
 		if !ok {
 			w.WriteHeader(http.StatusUnauthorized)
+			return
 		}
 		token, err := os.ReadFile("api_token")
 		if err != nil {
