@@ -1,6 +1,5 @@
 services:
-  postmodernist1848.ru:
-    image: postmodernist1848.ru-server:latest
+  server:
     build: .
     ports:
       - "6969:80"
