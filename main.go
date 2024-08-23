@@ -365,8 +365,6 @@ func main() {
 		log.Fatal("Failed to open sqlite database: ", err)
 	}
 
-	migrate()
-
 	const httpPort = "80"
 	log.Println("Listening on port", httpPort)
 	log.Fatal(http.ListenAndServe(":"+httpPort, nil))
