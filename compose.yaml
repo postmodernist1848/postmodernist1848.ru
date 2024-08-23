@@ -1,3 +1,4 @@
+name: "postmodernist1848.ru"
 services:
   server:
     build: .
