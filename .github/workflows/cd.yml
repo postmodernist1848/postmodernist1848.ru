@@ -18,17 +18,10 @@ jobs:
         key: ${{ secrets.PRIVATE_KEY }}
         envs: SERVER_KEY, SERVER_CRT,
         script: |
-          if [ -d ~/postmodernist1848.ru ]
-          then
-            cd ~/postmodernist1848.ru
-            git pull
-          else
-            git clone git@github.com:postmodernist1848/postmodernist1848.ru
-            cd ~/postmodernist1848.ru
-            echo "$SERVER_CRT" > server.crt
-            echo "$SERVER_KEY" > server.key
-          fi
-          ./deploy.sh
+          cd /var/www/postmodernist1848.ru/deployment/
+          git fetch origin master
+          git reset --hard origin/master
+          docker compose up --build -d
   Test:
     needs:
       build
