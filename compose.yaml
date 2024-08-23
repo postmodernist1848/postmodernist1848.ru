@@ -5,7 +5,7 @@ services:
       - "6969:80"
     volumes:
       - /var/www/postmodernist1848.ru/database.db:/database.db
-      - /var/www/postmodernist1848.ru/log.html:/log.html
+      - /var/www/postmodernist1848.ru/api_token:/api_token
     logging:
       driver: "json-file"
       options:
