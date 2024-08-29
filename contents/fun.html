@@ -88,7 +88,7 @@
                 signal: controller.signal
             }).then((response) => {
                 if (!response.ok) {
-                    throw new Error(`HTTP error: ${response.status}`);
+                    throw new Error(`HTTP error: status code ${response.status}`);
                 }
                 return response.text();
             }).then((html) => {
@@ -99,8 +99,6 @@
                 }
                 console.error(`Fetch problem: ${err}`);
                 outputDiv.innerHTML = "Server Error";
-            }).finally(() => {
-                controller = null;
             });
         }
     </script>

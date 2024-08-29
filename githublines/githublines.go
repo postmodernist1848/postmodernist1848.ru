@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 )
@@ -60,42 +61,49 @@ type RepoData struct {
 }
 
 func CountLinesRepo(ctx context.Context, repo Repo, c chan RepoData) {
-	url := fmt.Sprintf("https://github.com/%v", repo.FullName)
-	dir := randomFilename()
-	cmd := exec.Command("git", "clone", "--depth", "1", url, dir)
+	url := "https://github.com/" + repo.FullName
+	dir := "githublines/" + randomFilename()
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", url, dir)
+	cmd.Cancel = func() error {
+		return cmd.Process.Signal(os.Interrupt)
+	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("GithubLines: git clone command error: %+v", err)
+		log.Printf("GithubLines: git clone command error: %v", err)
 		log.Print(string(out))
 		c <- RepoData{repo.Name + " (error)", 0}
 		return
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		log.Println("RemoveAll", dir)
+		err := os.RemoveAll(dir)
+		if err != nil {
+			log.Println("os.RemoveAll failed: ", err)
+		}
+	}()
 
 	var linesCount int
 	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return ctx.Err()
-		default:
-			if strings.HasSuffix(path, "/.git") {
-				return filepath.SkipDir
-			}
-			if !d.IsDir() {
-				ext := filepath.Ext(path)
-				_, matchedFile := codeFilenames[d.Name()]
-				_, matchedExt := codeFiletypes[ext]
-				if matchedFile || matchedExt {
-					count, err := countLinesFile(path)
-					if err != nil {
-						log.Printf("countLinesFile error: %+v", err)
-						return err
-					}
-					linesCount += count
-				}
-			}
-			return nil
 		}
+		if strings.HasSuffix(path, "/.git") {
+			return filepath.SkipDir
+		}
+		if !d.IsDir() {
+			ext := filepath.Ext(path)
+			_, matchedFile := codeFilenames[d.Name()]
+			_, matchedExt := codeFiletypes[ext]
+			if matchedFile || matchedExt {
+				count, err := countLinesFile(path)
+				if err != nil {
+					log.Printf("countLinesFile error: %+v", err)
+					return err
+				}
+				linesCount += count
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		log.Printf("Walkdir error: %+v", err)
@@ -103,16 +111,17 @@ func CountLinesRepo(ctx context.Context, repo Repo, c chan RepoData) {
 		return
 	}
 	c <- RepoData{repo.Name, linesCount}
+	return
 }
 
-const countlines_requests_limit = 5
-const countlines_repos_limit = 100
+const countlinesRequestsLimit = 50
+const countlinesReposLimit = 100
 
 var countlines_current_requests atomic.Int32
 
 func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 
-	if countlines_current_requests.Load() >= countlines_requests_limit {
+	if countlines_current_requests.Load() >= countlinesRequestsLimit {
 		fmt.Fprint(w, "Too many requests are being processed currently. Try again later.")
 		return
 	}
@@ -125,7 +134,7 @@ func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Println("GithubLines: HTTP GET error for", username, err)
-		io.WriteString(w, "Failure getting data from Github")
+		w.Write([]byte("Failure getting data from Github"))
 		return
 	}
 	defer resp.Body.Close()
@@ -145,9 +154,10 @@ func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "Failure decoding data from Github")
 		return
 	}
-	if len(result) > countlines_repos_limit {
+	if len(result) > countlinesReposLimit {
 		fmt.Fprintf(w, "Too many repositories")
 	}
+	log.Printf("before: %v goroutines active\n", runtime.NumGoroutine())
 	c := make(chan RepoData)
 	for _, repo := range result {
 		go CountLinesRepo(r.Context(), repo, c)
@@ -155,18 +165,12 @@ func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "<ul>")
 	totalCount := 0
 	for range result {
-		select {
-		case repo := <-c:
-			fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
-			totalCount += repo.LineCount
-		case <-r.Context().Done():
-			log.Println("githublines: cancelled")
-			return
-		}
+		repo := <-c
+		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
+		totalCount += repo.LineCount
 	}
-	io.WriteString(w, "<ul>")
+	io.WriteString(w, "</ul>")
 	fmt.Fprintf(w, "Total: %v lines", totalCount)
-
 }
 
 type void struct{}
