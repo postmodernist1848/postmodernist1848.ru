@@ -336,7 +336,7 @@ func main() {
 	http.HandleFunc("/api/countlines/", githublines.CountlinesHandler)
 	http.HandleFunc("/api/log", logHandler)
 
-	// old uses current /api
+	// NOTE: old uses current /api
 	http.HandleFunc("/old/", old.ServeRoot)
 	http.HandleFunc("/old/log", old.ServeLog)
 	http.HandleFunc("/old/static/", serveStaticFile)
@@ -351,6 +351,7 @@ func main() {
 			os.Exit(1)
 		}
 		log.Println("Successfully closed the database")
+
 		switch sig {
 		case os.Interrupt:
 			os.Exit(130)
