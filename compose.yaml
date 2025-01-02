@@ -2,7 +2,7 @@ services:
   server:
     build: .
     ports:
-      - "2000:80"
+      - "${POSTMODERNIST1848_RU_PORT:?}:80"
     volumes:
       - /var/www/postmodernist1848.ru/database.db:/app/database.db
       - /var/www/postmodernist1848.ru/api_token:/app/api_token

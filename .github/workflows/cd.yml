@@ -18,7 +18,8 @@ jobs:
         key: ${{ secrets.PRIVATE_KEY }}
         envs: SERVER_KEY, SERVER_CRT,
         script: |
-          cd /var/www/postmodernist1848.ru/postmodernist1848.ru-production/
+          cd /var/www/postmodernist1848.ru/postmodernist1848.ru/
+          . /var/www/ports
           git fetch origin master
           git reset --hard origin/master
           docker compose up --build -d
