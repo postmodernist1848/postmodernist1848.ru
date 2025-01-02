@@ -6,12 +6,10 @@ on:
 jobs:
   Build:
     runs-on: ubuntu-latest
+    environment: production
     steps:
     - name: Deploy using ssh
       uses: appleboy/ssh-action@master
-      env:
-        SERVER_KEY: ${{ secrets.SERVER_KEY }}
-        SERVER_CRT: ${{ secrets.SERVER_CRT }}
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
@@ -20,7 +18,7 @@ jobs:
         script: /var/www/deploy postmodernist1848_ru --build
   Test:
     needs:
-      build
+      Build
     runs-on: ubuntu-latest
     steps:
     - name: Attempt to curl postmodernist1848.ru
