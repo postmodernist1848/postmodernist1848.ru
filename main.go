@@ -315,8 +315,8 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(msg.Author) > 100 {
-		log.Printf("Author name too long (%v bytes)\n", len(msg.Author))
-		http.Error(w, "Author name too long", http.StatusBadRequest)
+		log.Printf("Username too long (%v bytes)\n", len(msg.Author))
+		http.Error(w, "Username too long", http.StatusBadRequest)
 		return
 	}
 	if len(msg.Text) > 1848 {
