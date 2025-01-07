@@ -12,20 +12,57 @@
     }
 </style>
 <script>
-    let username;
-    const chatWindow = document.getElementById("chat-window");
-    setTimeout(() => {
-        updateChat(true);
-        askUsername();
-        setInterval(updateChat, 7000);
-    }, 0);
+    const pollingTimeout = 7000;
+
+    class UpdateChatTimer {
+        constructor() {
+            this.scrollPending = false;
+
+            updateChat(true);
+            this.start();
+        }
+
+        // start the timer without updating chat
+        start(ms = pollingTimeout) {
+            this.timer = setTimeout(() => this.#start_impl(ms), ms);
+        }
+
+        stop() {
+            clearTimeout(this.timer);
+        }
+
+        lockAndScroll(f, ms = pollingTimeout) {
+            this.stop();
+            const ret = f();
+            this.scrollPending = true;
+            this.start(ms);
+            return ret;
+        }
+
+        async asyncLock(f, ms = pollingTimeout) {
+            this.stop();
+            const ret = await f();
+            this.start(ms);
+            return ret;
+        }
+
+        #start_impl(ms) {
+            updateChat(this.scrollPending);
+            if (this.scrollPending) this.scrollPending = false;
+            this.timer = setTimeout(() => this.#start_impl(ms), ms);
+        }
+    }
 
     function askUsername() {
-        username = prompt("Enter your username");
+        let username = prompt("Enter your username");
         if (!username) {
             username = "Anon";
         }
+        return username;
     }
+    const username = askUsername();
+    const chatWindow = document.getElementById("chat-window");
+    const updateChatTimer = new UpdateChatTimer();
 
     function scrollToBottom() {
         chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -48,7 +85,9 @@
     }
 
     function displayError(message) {
-        chatWindow.innerHTML = "Bad request: " + message;
+        updateChatTimer.lockAndScroll(() => {
+            chatWindow.innerHTML = "Error: " + message;
+        }, 3000);
     }
 
     async function sendMessage(text) {
@@ -71,8 +110,10 @@
                 displayError(`unknown error. Status code: ${response.status}`);
                 return
             }
-            chatWindow.innerHTML = await response.text();
-            scrollToBottom();
+            await updateChatTimer.asyncLock(async () => {
+                chatWindow.innerHTML = await response.text();
+                scrollToBottom();
+            });
         } catch (e) {
             console.error(e);
             displayError("unknown error");
