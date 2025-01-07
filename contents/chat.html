@@ -18,13 +18,17 @@
         updateChat(true);
         askUsername();
         setInterval(updateChat, 7000);
-    }, 10);
+    }, 0);
 
     function askUsername() {
         username = prompt("Enter your username");
         if (!username) {
             username = "Anon";
         }
+    }
+
+    function scrollToBottom() {
+        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
     function updateChat(scroll = false) {
@@ -35,23 +39,44 @@
             return response.text();
         }).then((html) => {
             chatWindow.innerHTML = html;
-            if (scroll) chatWindow.scrollTop = chatWindow.scrollHeight;
+            if (scroll) scrollToBottom();
         }).catch((err) => {
                 console.error(`Fetch problem: ${err.message}`);
                 chatWindow.innerHTML = "Server Error";
             }
         );
+    }
 
+    function displayError(message) {
+        chatWindow.innerHTML = "Bad request: " + message;
     }
 
     async function sendMessage(text) {
-        return fetch("/api/send-message", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({author: username, text: text}),
-        });
+        try {
+            const response = await fetch("/api/send-message", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({author: username, text: text}),
+            });
+
+            if (response.status === 400) {
+                displayError(await response.text());
+                return
+            }
+
+            if (!response.ok) {
+                console.log(response.status)
+                displayError(`unknown error. Status code: ${response.status}`);
+                return
+            }
+            chatWindow.innerHTML = await response.text();
+            scrollToBottom();
+        } catch (e) {
+            console.error(e);
+            displayError("unknown error");
+        }
     }
 
     const chatInput = document.getElementById("chat-input");
@@ -60,9 +85,7 @@
             event.preventDefault();
             const message = chatInput.value.trim();
             if (message !== "") {
-                sendMessage(message).then(() => {
-                    updateChat(true);
-                });
+                sendMessage(message);
                 chatInput.value = "";
             }
         }

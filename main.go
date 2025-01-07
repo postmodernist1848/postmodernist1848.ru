@@ -272,13 +272,7 @@ type ChatMessage struct {
 	Text   string `json:"text"`
 }
 
-func chatMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	row, err := database.Query("SELECT * FROM message ORDER BY id")
-	if err != nil {
-		log.Println("Failed to retrieve messages: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-	defer row.Close()
+func writeMessages(w io.Writer, row *sql.Rows) {
 	w.Write([]byte("<ul style=\"list-style: none\">"))
 	for row.Next() {
 		var id int
@@ -295,6 +289,22 @@ func chatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("</ul>"))
 }
 
+func chatMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	row, err := database.Query("SELECT * FROM message ORDER BY id")
+	if err != nil {
+		log.Println("Failed to retrieve messages: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	defer row.Close()
+	writeMessages(w, row)
+}
+
+func insertChatMessage(message ChatMessage) error {
+	_, err := database.Exec(`INSERT INTO message(author, text) VALUES (?, ?)`,
+		message.Author, message.Text)
+	return err
+}
+
 func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var msg ChatMessage
@@ -304,29 +314,26 @@ func chatSendHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if l := len(msg.Author); l >= 100 {
-		log.Printf("Author name too long (%v bytes)\n", l)
-		w.WriteHeader(http.StatusBadRequest)
+	if len(msg.Author) > 100 {
+		log.Printf("Author name too long (%v bytes)\n", len(msg.Author))
+		http.Error(w, "Author name too long", http.StatusBadRequest)
 		return
 	}
-	if l := len(msg.Text); l >= 1848 {
-		log.Printf("Message too long (%v bytes)\n", l)
-		w.WriteHeader(http.StatusBadRequest)
+	if len(msg.Text) > 1848 {
+		log.Printf("Message too long (%v bytes)\n", len(msg.Text))
+		http.Error(w, "Message too long", http.StatusBadRequest)
 		return
 	}
 	log.Println("Received message: ", msg)
 	if err = insertChatMessage(msg); err != nil {
 		log.Println("Failed to insert chat message: ", err)
+		http.Error(w, "Failed to send chat message", http.StatusInternalServerError)
+		return
 	}
+	chatMessagesHandler(w, r)
 }
 
 var database *sql.DB
-
-func insertChatMessage(message ChatMessage) error {
-	_, err := database.Exec(`INSERT INTO message(author, text) VALUES (?, ?)`,
-		message.Author, message.Text)
-	return err
-}
 
 func main() {
 
