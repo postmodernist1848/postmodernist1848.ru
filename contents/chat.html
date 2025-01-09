@@ -13,43 +13,35 @@
 </style>
 <script>
     const pollingTimeout = 7000;
+    const errorTimeout = 3000;
 
     class UpdateChatTimer {
         constructor() {
-            this.scrollPending = false;
-
             updateChat(true);
             this.start();
         }
 
         // start the timer without updating chat
-        start(ms = pollingTimeout) {
-            this.timer = setTimeout(() => this.#start_impl(ms), ms);
+        start() {
+            const impl = () => {
+                updateChat(this.scrollPending);
+                if (this.scrollPending) this.scrollPending = false;
+                this.timer = setTimeout(impl, pollingTimeout);
+            };
+            this.timer = setTimeout(impl, pollingTimeout);
         }
 
         stop() {
             clearTimeout(this.timer);
         }
 
-        lockAndScroll(f, ms = pollingTimeout) {
+        displayError(message) {
             this.stop();
-            const ret = f();
-            this.scrollPending = true;
-            this.start(ms);
-            return ret;
-        }
-
-        async asyncLock(f, ms = pollingTimeout) {
-            this.stop();
-            const ret = await f();
-            this.start(ms);
-            return ret;
-        }
-
-        #start_impl(ms) {
-            updateChat(this.scrollPending);
-            if (this.scrollPending) this.scrollPending = false;
-            this.timer = setTimeout(() => this.#start_impl(ms), ms);
+            chatWindow.innerHTML = `<div style="height: 100%; width: 100%; box-sizing: border-box; text-align: center; color: #ff2626; padding: 40vh 0">Error: ${message}</div>`;
+            this.timer = setTimeout(() => {
+                updateChat(true);
+                this.start();
+            }, errorTimeout);
         }
     }
 
@@ -60,6 +52,7 @@
         }
         return username;
     }
+
     const username = askUsername();
     const chatWindow = document.getElementById("chat-window");
     const updateChatTimer = new UpdateChatTimer();
@@ -79,15 +72,9 @@
             if (scroll) scrollToBottom();
         }).catch((err) => {
                 console.error(`Fetch problem: ${err.message}`);
-                chatWindow.innerHTML = "Server Error";
+                updateChatTimer.displayError("Failed to update chat");
             }
         );
-    }
-
-    function displayError(message) {
-        updateChatTimer.lockAndScroll(() => {
-            chatWindow.innerHTML = "Error: " + message;
-        }, 3000);
     }
 
     async function sendMessage(text) {
@@ -101,22 +88,22 @@
             });
 
             if (response.status === 400) {
-                displayError(await response.text());
-                return
+                updateChatTimer.displayError(await response.text());
+                return;
             }
 
             if (!response.ok) {
-                console.log(response.status)
-                displayError(`unknown error. Status code: ${response.status}`);
-                return
+                console.error(response);
+                updateChatTimer.displayError(`unknown error. Status code: ${response.status}`);
+                return;
             }
-            await updateChatTimer.asyncLock(async () => {
-                chatWindow.innerHTML = await response.text();
-                scrollToBottom();
-            });
+            updateChatTimer.stop();
+            chatWindow.innerHTML = await response.text();
+            scrollToBottom();
+            updateChatTimer.start();
         } catch (e) {
             console.error(e);
-            displayError("unknown error");
+            updateChatTimer.displayError("unknown error");
         }
     }
 
