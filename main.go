@@ -16,7 +16,6 @@ import (
 	"os"
 	"os/signal"
 	"postmodernist1848.ru/githublines"
-	"postmodernist1848.ru/old"
 	"strings"
 	"syscall"
 )
@@ -347,12 +346,6 @@ func main() {
 	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/api/countlines/", githublines.CountlinesHandler)
 	http.HandleFunc("/api/log", logHandler)
-
-	// NOTE: old uses current /api
-	http.HandleFunc("/old/", old.ServeRoot)
-	http.HandleFunc("/old/log", old.ServeLog)
-	http.HandleFunc("/old/static/", serveStaticFile)
-	http.HandleFunc("/old/assets/", old.ServeStaticFile)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
