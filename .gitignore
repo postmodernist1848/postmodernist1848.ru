@@ -1,2 +1,5 @@
-postmodernist1848.ru
+server
+database.db
+api_token
 .idea
+*.test

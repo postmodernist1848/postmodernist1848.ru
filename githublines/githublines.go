@@ -25,7 +25,6 @@ type Repo struct {
 }
 
 func countLinesFile(path string) (int, error) {
-
 	r, err := os.Open(path)
 	if err != nil {
 		return 0, err
@@ -39,11 +38,10 @@ func countLinesFile(path string) (int, error) {
 		c, err := r.Read(buf)
 		count += bytes.Count(buf[:c], lineSep)
 
-		switch {
-		case err == io.EOF:
+		if err == io.EOF {
 			return count, nil
-
-		case err != nil:
+		}
+		if err != nil {
 			return 0, err
 		}
 	}
@@ -51,7 +49,7 @@ func countLinesFile(path string) (int, error) {
 
 func randomFilename() string {
 	var randBytes = make([]byte, 16)
-	rand.Read(randBytes)
+	_, _ = rand.Read(randBytes)
 	return hex.EncodeToString(randBytes)
 }
 
@@ -75,7 +73,6 @@ func CountLinesRepo(ctx context.Context, repo Repo, c chan RepoData) {
 		return
 	}
 	defer func() {
-		log.Println("RemoveAll", dir)
 		err := os.RemoveAll(dir)
 		if err != nil {
 			log.Println("os.RemoveAll failed: ", err)
@@ -117,16 +114,16 @@ func CountLinesRepo(ctx context.Context, repo Repo, c chan RepoData) {
 const countlinesRequestsLimit = 50
 const countlinesReposLimit = 100
 
-var countlines_current_requests atomic.Int32
+var countlinesCurrentRequests atomic.Int32
 
 func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 
-	if countlines_current_requests.Load() >= countlinesRequestsLimit {
+	if countlinesCurrentRequests.Load() >= countlinesRequestsLimit {
 		fmt.Fprint(w, "Too many requests are being processed currently. Try again later.")
 		return
 	}
-	countlines_current_requests.Add(1)
-	defer countlines_current_requests.Add(-1)
+	countlinesCurrentRequests.Add(1)
+	defer countlinesCurrentRequests.Add(-1)
 
 	username := strings.TrimPrefix(r.URL.Path, "/api/countlines/")
 	log.Printf("Handling countlines/ request. Username: %v", username)
@@ -169,6 +166,7 @@ func CountlinesHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
 		totalCount += repo.LineCount
 	}
+	log.Printf("after: %v goroutines active\n", runtime.NumGoroutine())
 	io.WriteString(w, "</ul>")
 	fmt.Fprintf(w, "Total: %v lines", totalCount)
 }
@@ -766,8 +764,6 @@ var codeFiletypes = map[string]void{
 	".cairo":              {},
 	".rs.in":              {},
 	".rs":                 {},
-	".rst.txt":            {},
-	".rest.txt":           {},
 	".rest":               {},
 	".rst":                {},
 	".s":                  {},
@@ -885,7 +881,6 @@ var codeFiletypes = map[string]void{
 	".sty":                {},
 	".dtx":                {},
 	".bst":                {},
-	".txt":                {},
 	".text":               {},
 	".tres":               {},
 	".tscn":               {},
