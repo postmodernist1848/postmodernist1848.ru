@@ -87,9 +87,6 @@
             fetch(`/api/countlines/${username}`, {
                 signal: controller.signal
             }).then((response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error: status code ${response.status}`);
-                }
                 return response.text();
             }).then((html) => {
                 outputDiv.innerHTML = html;

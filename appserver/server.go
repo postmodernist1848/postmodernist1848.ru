@@ -2,20 +2,25 @@ package appserver
 
 import (
 	"bytes"
-	"encoding/json"
 	"github.com/PuerkitoBio/goquery"
-	"html"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
-	"os"
-	"postmodernist1848.ru/domain"
-	"postmodernist1848.ru/githublines"
+	"postmodernist1848.ru/appserver/api"
 	"postmodernist1848.ru/repository/sqlite"
 	"postmodernist1848.ru/resources"
 	"strings"
 )
+
+func serveFile(w http.ResponseWriter, r *http.Request, name string) {
+	http.ServeFileFS(w, r, resources.FS, name)
+}
+
+// serveStaticFile is a handler that serves a file from resources.FS
+func serveStaticFile(w http.ResponseWriter, r *http.Request) {
+	serveFile(w, r, strings.TrimPrefix(r.URL.Path, "/"))
+}
 
 // serveContents inserts reader data into contents template and moves
 // <script>, <style>, <link>, <meta> tags into <head>
@@ -81,10 +86,6 @@ func serveContentsFromFile(w http.ResponseWriter, r *http.Request, path string) 
 	serveContents(w, r, file)
 }
 
-func serveFile(w http.ResponseWriter, r *http.Request, name string) {
-	http.ServeFileFS(w, r, resources.FS, name)
-}
-
 func contentsPageHandler(w http.ResponseWriter, r *http.Request) {
 	serveContentsFromFile(w, r, "contents/"+r.PathValue("page")+".html")
 }
@@ -118,102 +119,6 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 	serveContents(w, r, logHTML)
 }
 
-func serveStaticFile(w http.ResponseWriter, r *http.Request) {
-	serveFile(w, r, strings.TrimPrefix(r.URL.Path, "/"))
-}
-
-func getLogHandler(w http.ResponseWriter, r *http.Request) {
-	logs, err := sqlite.GetNotes()
-	if err != nil {
-		log.Println("Could not get logs:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	JSON, err := json.Marshal(logs)
-	if err != nil {
-		log.Println("Could not marshal logs JSON:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	_, _ = w.Write(JSON)
-}
-
-func putLogHandler(w http.ResponseWriter, r *http.Request) {
-	username, password, ok := r.BasicAuth()
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	token, err := os.ReadFile("api_token")
-	if err != nil {
-		log.Println("Could not read token file:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	if username != "postmodernist1848" || string(token) != password {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	var logs []domain.Note
-	err = json.NewDecoder(r.Body).Decode(&logs)
-	if err != nil {
-		log.Println("Could not unmarshal logs JSON:", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	log.Println("Rewriting logs...")
-	err = sqlite.RewriteNotes(logs)
-	if err != nil {
-		log.Println("Could not rewrite logs:", err)
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-}
-
-func getChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	msgs, err := sqlite.GetChatMessages()
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	for _, msg := range msgs {
-		w.Write([]byte("<li>"))
-		w.Write([]byte(html.EscapeString(msg.Author)))
-		w.Write([]byte(": "))
-		w.Write([]byte(html.EscapeString(msg.Text)))
-		w.Write([]byte("</li>"))
-	}
-	w.Write([]byte("</ul>"))
-}
-
-func postChatMessageHandler(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var msg domain.ChatMessage
-	err := decoder.Decode(&msg)
-	if err != nil {
-		log.Println("failed to parse message: ", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if len(msg.Author) > 100 {
-		log.Printf("Username too long (%v bytes)\n", len(msg.Author))
-		http.Error(w, "Username too long", http.StatusBadRequest)
-		return
-	}
-	if len(msg.Text) > 1848 {
-		log.Printf("Message too long (%v bytes)\n", len(msg.Text))
-		http.Error(w, "Message too long", http.StatusBadRequest)
-		return
-	}
-	log.Println("Received message: ", msg)
-	if err = sqlite.InsertChatMessage(msg); err != nil {
-		log.Println("Failed to insert chat message: ", err)
-		http.Error(w, "Failed to send chat message", http.StatusInternalServerError)
-		return
-	}
-	getChatMessagesHandler(w, r)
-}
-
 func New(addr string) *http.Server {
 	mux := http.NewServeMux()
 
@@ -231,13 +136,12 @@ func New(addr string) *http.Server {
 	mux.HandleFunc("/static/", serveStaticFile)
 	mux.HandleFunc("/assets/", serveStaticFile)
 
-	// TODO use REST-like POST and GET semantics for messages
-	mux.HandleFunc("GET /api/message", getChatMessagesHandler)
-	mux.HandleFunc("POST /api/message", postChatMessageHandler)
+	mux.HandleFunc("/api/countlines/{username}", api.CountLinesHandler)
 
-	mux.HandleFunc("/api/countlines/", githublines.CountlinesHandler)
-	mux.HandleFunc("GET /api/log", getLogHandler)
-	mux.HandleFunc("PUT /api/log", putLogHandler)
+	mux.HandleFunc("GET /api/message", api.GETChatMessagesHandler)
+	mux.HandleFunc("POST /api/message", api.POSTChatMessageHandler)
+	mux.HandleFunc("GET /api/log", api.GETLogHandler)
+	mux.HandleFunc("PUT /api/log", api.PUTLogHandler)
 
 	return &http.Server{Addr: addr, Handler: mux}
 }
