@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 
 # Use cache on the host to speed up build times
-RUN --mount=type=cache,target="/root/.cache/go-build" go build -o postmodernist1848-ru-server
+RUN --mount=type=cache,target="/root/.cache/go-build" go build ./cmd/server
 
 # Run the binary
-CMD ["./postmodernist1848-ru-server"]
+CMD ["./server"]
