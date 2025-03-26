@@ -4,3 +4,4 @@ database.db
 api_token
 .idea
 *.test
+test.db
