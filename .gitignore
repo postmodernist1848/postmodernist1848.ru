@@ -1,4 +1,4 @@
-server
+./server
 database.db
 api_token
 .idea
