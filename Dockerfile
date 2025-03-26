@@ -8,7 +8,7 @@ RUN go mod download
 
 COPY . .
 
-COPY test.db .
+COPY test.db ./database.db
 RUN --mount=type=cache,target="/root/.cache/go-build" go test -v ./cmd/server/
 RUN --mount=type=cache,target="/root/.cache/go-build" go build ./cmd/server
 
