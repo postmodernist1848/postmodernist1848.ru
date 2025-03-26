@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"postmodernist1848.ru/internal/server"
+	"postmodernist1848.ru/appserver"
 	"postmodernist1848.ru/repository/sqlite"
 	"syscall"
 	"time"
@@ -13,7 +13,7 @@ import (
 
 func main() {
 
-	srv := server.New(":80")
+	server := appserver.New(":80")
 
 	go func() {
 		sigs := make(chan os.Signal, 1)
@@ -28,7 +28,7 @@ func main() {
 		log.Println("Shutting down...")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := srv.Shutdown(shutdownCtx); err != nil {
+		if err := server.Shutdown(shutdownCtx); err != nil {
 			log.Println("Failed to close server:", err)
 		}
 
@@ -40,5 +40,5 @@ func main() {
 		}
 	}()
 
-	log.Println(srv.ListenAndServe())
+	log.Println(server.ListenAndServe())
 }

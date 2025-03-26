@@ -10,8 +10,8 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"postmodernist1848.ru/appserver"
 	"postmodernist1848.ru/domain"
-	"postmodernist1848.ru/internal/server"
 	"slices"
 	"testing"
 )
@@ -20,7 +20,7 @@ const testServerAddr = ":8080"
 
 func testServer(t *testing.T) *http.Server {
 	t.Helper()
-	srv := server.New(testServerAddr)
+	srv := appserver.New(testServerAddr)
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			t.Error(err)
@@ -151,14 +151,14 @@ func TestAllOk(t *testing.T) {
 				t.Error(err)
 			}
 		})
-		var logs []domain.Log
+		var logs []domain.Note
 		for i := range 20 {
 			text := RandStringBytes(rand.Int()%100 + 10)
-			logs = append(logs, domain.Log{fmt.Sprintf("%d.03.42", i+1), template.HTML(text)})
+			logs = append(logs, domain.Note{fmt.Sprintf("%d.03.42", i+1), template.HTML(text)})
 		}
 		httpRequest(t, "/api/log", http.MethodPut, logs, "postmodernist1848", testPassword)
 		res := httpGET(t, "/api/log")
-		var resLogs []domain.Log
+		var resLogs []domain.Note
 		if err := json.Unmarshal(res, &resLogs); err != nil {
 			t.Fatal(err)
 		}

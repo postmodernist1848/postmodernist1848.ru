@@ -1,4 +1,4 @@
-package server
+package appserver
 
 import (
 	"bytes"
@@ -101,7 +101,7 @@ func articlesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func logHandler(w http.ResponseWriter, r *http.Request) {
-	logs, err := sqlite.GetLogs()
+	logs, err := sqlite.GetNotes()
 	if err != nil {
 		log.Println("Could not get logs:", err)
 		serveError(w, r)
@@ -123,7 +123,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func getLogHandler(w http.ResponseWriter, r *http.Request) {
-	logs, err := sqlite.GetLogs()
+	logs, err := sqlite.GetNotes()
 	if err != nil {
 		log.Println("Could not get logs:", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -154,7 +154,7 @@ func putLogHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	var logs []domain.Log
+	var logs []domain.Note
 	err = json.NewDecoder(r.Body).Decode(&logs)
 	if err != nil {
 		log.Println("Could not unmarshal logs JSON:", err)
@@ -162,7 +162,7 @@ func putLogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Rewriting logs...")
-	err = sqlite.RewriteLogs(logs)
+	err = sqlite.RewriteNotes(logs)
 	if err != nil {
 		log.Println("Could not rewrite logs:", err)
 		w.WriteHeader(http.StatusInternalServerError)

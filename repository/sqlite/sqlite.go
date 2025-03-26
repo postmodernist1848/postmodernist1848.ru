@@ -19,12 +19,12 @@ func init() {
 	}
 }
 
-func GetLogs() ([]domain.Log, error) {
+func GetNotes() ([]domain.Note, error) {
 	rows, err := Database.Query(`SELECT date, html FROM note`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query note table: %w", err)
 	}
-	var logs []domain.Log
+	var logs []domain.Note
 	for rows.Next() {
 		var date string
 		var HTML string
@@ -32,12 +32,12 @@ func GetLogs() ([]domain.Log, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read note table row: %w", err)
 		}
-		logs = append(logs, domain.Log{date, template.HTML(HTML)})
+		logs = append(logs, domain.Note{date, template.HTML(HTML)})
 	}
 	return logs, nil
 }
 
-func RewriteLogs(logs []domain.Log) error {
+func RewriteNotes(logs []domain.Note) error {
 	tx, err := Database.Begin()
 	if err != nil {
 		return err
