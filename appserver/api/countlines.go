@@ -32,7 +32,6 @@ func CountLinesHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.PathValue("username")
 	log.Printf("Handling countlines/ request. Username: %v", username)
 
-	totalCount := 0
 	c, err := githublines.CountLines(r.Context(), username, countlinesReposLimit)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -46,6 +45,8 @@ func CountLinesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	totalCount := 0
 	io.WriteString(w, "<ul>")
 	for repo := range c {
 		fmt.Fprintf(w, "<li>%v: %v lines</li>", repo.Name, repo.LineCount)
