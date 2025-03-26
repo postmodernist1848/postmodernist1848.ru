@@ -8,11 +8,11 @@ RUN go mod download
 
 COPY . .
 
-# Use cache on the host to speed up build times
+COPY ../database.db .
+RUN --mount=type=cache,target="/root/.cache/go-build" go test -v ./cmd/server/
 RUN --mount=type=cache,target="/root/.cache/go-build" go build ./cmd/server
 
 FROM golang:latest
 WORKDIR /app
 COPY --from=builder /build/server /app/
 CMD ["./server"]
-
