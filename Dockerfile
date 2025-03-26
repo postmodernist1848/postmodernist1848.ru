@@ -1,16 +1,18 @@
-FROM golang:latest
+FROM golang:alpine as builder
 
-WORKDIR /app
+WORKDIR /build
 
 # Download dependencies as a separate step to cache downloads
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source
 COPY . .
 
 # Use cache on the host to speed up build times
 RUN --mount=type=cache,target="/root/.cache/go-build" go build ./cmd/server
 
-# Run the binary
+FROM golang:alpine
+WORKDIR /app
+COPY --from=builder /build/server /app/
 CMD ["./server"]
+
