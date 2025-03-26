@@ -235,8 +235,8 @@ func New(addr string) *http.Server {
 	mux.HandleFunc("/assets/", serveStaticFile)
 
 	// TODO use REST-like POST and GET semantics for messages
-	mux.HandleFunc("/api/chat-messages", getChatMessagesHandler)
-	mux.HandleFunc("/api/send-message", postChatMessageHandler)
+	mux.HandleFunc("GET /api/message", getChatMessagesHandler)
+	mux.HandleFunc("POST /api/message", postChatMessageHandler)
 
 	mux.HandleFunc("/api/countlines/", githublines.CountlinesHandler)
 	mux.HandleFunc("/api/log", getPostLogHandler)

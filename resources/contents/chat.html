@@ -62,7 +62,7 @@
     }
 
     function updateChat(scroll = false) {
-        fetch("/api/chat-messages").then((response) => {
+        fetch("/api/message").then((response) => {
             if (!response.ok) {
                 throw new Error(`HTTP error: ${response.status}`);
             }
@@ -79,7 +79,7 @@
 
     async function sendMessage(text) {
         try {
-            const response = await fetch("/api/send-message", {
+            const response = await fetch("/api/message", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
