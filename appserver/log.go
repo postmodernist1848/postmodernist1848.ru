@@ -1,16 +1,17 @@
-package api
+package appserver
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 	"postmodernist1848.ru/domain"
-	"postmodernist1848.ru/repository/sqlite"
+	"postmodernist1848.ru/resources"
 )
 
-func GETLogHandler(w http.ResponseWriter, r *http.Request) {
-	notes, err := sqlite.GetNotes()
+func (s *router) getLogHandler(w http.ResponseWriter, _ *http.Request) {
+	notes, err := s.repository.GetNotes()
 	if err != nil {
 		log.Println("Could not get notes:", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -25,7 +26,7 @@ func GETLogHandler(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(JSON)
 }
 
-func PUTLogHandler(w http.ResponseWriter, r *http.Request) {
+func (s *router) putLogHandler(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -49,9 +50,27 @@ func PUTLogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Rewriting logs...")
-	err = sqlite.RewriteNotes(logs)
+	err = s.repository.RewriteNotes(logs)
 	if err != nil {
 		log.Println("Could not rewrite logs:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+func (s *router) logHandler(w http.ResponseWriter, r *http.Request) {
+	logs, err := s.repository.GetNotes()
+	if err != nil {
+		log.Println("Could not get logs:", err)
+		serveError(w, r)
+		return
+	}
+
+	logHTML := &bytes.Buffer{}
+	if err = resources.LogTemplate().Execute(logHTML, logs); err != nil {
+		log.Println("Failed to process /log HTML:", err)
+		serveError(w, r)
+		return
+	}
+
+	serveContents(w, r, logHTML)
 }

@@ -1,17 +1,19 @@
 package appserver
 
 import (
-	"bytes"
 	"github.com/PuerkitoBio/goquery"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
-	"postmodernist1848.ru/appserver/api"
 	"postmodernist1848.ru/repository/sqlite"
 	"postmodernist1848.ru/resources"
 	"strings"
 )
+
+type router struct {
+	repository *sqlite.Repository
+}
 
 func serveFile(w http.ResponseWriter, r *http.Request, name string) {
 	http.ServeFileFS(w, r, resources.FS, name)
@@ -101,25 +103,7 @@ func articlesHandler(w http.ResponseWriter, r *http.Request) {
 	serveContents(w, r, file)
 }
 
-func logHandler(w http.ResponseWriter, r *http.Request) {
-	logs, err := sqlite.GetNotes()
-	if err != nil {
-		log.Println("Could not get logs:", err)
-		serveError(w, r)
-		return
-	}
-
-	logHTML := &bytes.Buffer{}
-	if err = resources.LogTemplate().Execute(logHTML, logs); err != nil {
-		log.Println("Failed to process /log HTML:", err)
-		serveError(w, r)
-		return
-	}
-
-	serveContents(w, r, logHTML)
-}
-
-func New(addr string) *http.Server {
+func New(addr string, repository *sqlite.Repository) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -130,18 +114,19 @@ func New(addr string) *http.Server {
 	mux.HandleFunc("/articles/{title}", articlesHandler)
 	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		serveFile(w, r, "assets/favicon.ico")
-		return
 	})
-	mux.HandleFunc("/log", logHandler)
+
 	mux.HandleFunc("/static/", serveStaticFile)
 	mux.HandleFunc("/assets/", serveStaticFile)
 
-	mux.HandleFunc("/api/countlines/{username}", api.CountLinesHandler)
+	r := router{repository}
+	mux.HandleFunc("/log", r.logHandler)
 
-	mux.HandleFunc("GET /api/message", api.GETChatMessagesHandler)
-	mux.HandleFunc("POST /api/message", api.POSTChatMessageHandler)
-	mux.HandleFunc("GET /api/log", api.GETLogHandler)
-	mux.HandleFunc("PUT /api/log", api.PUTLogHandler)
+	mux.HandleFunc("GET /api/countlines/{username}", getCountLinesHandler)
+	mux.HandleFunc("GET /api/message", r.getChatMessagesHandler)
+	mux.HandleFunc("POST /api/message", r.postChatMessageHandler)
+	mux.HandleFunc("GET /api/log", r.getLogHandler)
+	mux.HandleFunc("PUT /api/log", r.putLogHandler)
 
 	return &http.Server{Addr: addr, Handler: mux}
 }

@@ -1,4 +1,4 @@
-package api
+package appserver
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ const countlinesReposLimit = 50
 
 var countlinesCurrentRequests atomic.Int32
 
-func CountLinesHandler(w http.ResponseWriter, r *http.Request) {
+func getCountLinesHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		current := countlinesCurrentRequests.Load()
 		if current >= countlinesRequestsLimit {

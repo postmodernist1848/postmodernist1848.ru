@@ -10,17 +10,24 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"postmodernist1848.ru/appserver"
-	"postmodernist1848.ru/domain"
+	"postmodernist1848.ru/repository/sqlite"
 	"slices"
 	"testing"
+
+	"postmodernist1848.ru/appserver"
+	"postmodernist1848.ru/domain"
 )
 
-const testServerAddr = ":8080"
+const testServerAddr = "localhost:8080"
+const testServerURL = "http://" + testServerAddr
 
 func testServer(t *testing.T) *http.Server {
 	t.Helper()
-	srv := appserver.New(testServerAddr)
+	r, err := sqlite.Open("test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := appserver.New(testServerAddr, r)
 	go func() {
 		if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			t.Error(err)
@@ -30,45 +37,48 @@ func testServer(t *testing.T) *http.Server {
 	t.Cleanup(func() {
 		t.Log("stopping server")
 		if err := srv.Close(); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	})
 	return srv
 }
 
 func httpGET(t *testing.T, path string) []byte {
-	resp, err := http.Get("http://localhost" + testServerAddr + path)
-	if err != nil {
-		t.Error(err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("%s: got %d, want %d", path, resp.StatusCode, http.StatusOK)
-	}
-	bytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Error(err)
-	}
-	return bytes
+	return httpRequest(t, path, http.MethodGet, nil, nil)
 }
 
-func httpRequest(t *testing.T, path string, method string, body any, username string, password string) []byte {
-	bodyJSON, err := json.Marshal(body)
-	if err != nil {
-		t.Fatal(err)
+type auth struct {
+	username, password string
+}
+
+func httpRequest(t *testing.T, path string, method string, body any, auth *auth) []byte {
+	path = testServerURL + path
+
+	var req *http.Request
+	if body != nil {
+		bodyJSON, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req, err = http.NewRequest(
+			method,
+			path,
+			bytes.NewReader(bodyJSON),
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+	} else {
+		req, _ = http.NewRequest(
+			method,
+			path,
+			nil,
+		)
 	}
 
-	req, err := http.NewRequest(
-		method,
-		"http://localhost"+testServerAddr+path,
-		bytes.NewReader(bodyJSON),
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if username != "" {
-		req.SetBasicAuth(username, password)
+	if auth != nil {
+		req.SetBasicAuth(auth.username, auth.password)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -78,11 +88,10 @@ func httpRequest(t *testing.T, path string, method string, body any, username st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("%s %s: got %d, want %d",
+		t.Errorf("%s %s: got %d, want %d",
 			method, path, resp.StatusCode, http.StatusOK)
 	}
 
-	// Read and return response body
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +141,7 @@ func TestAllOk(t *testing.T) {
 		httpRequest(t, "/api/message", http.MethodPost, map[string]interface{}{
 			"author": author,
 			"text":   text,
-		}, "", "")
+		}, nil)
 		res := httpGET(t, "/api/message")
 		if !bytes.HasSuffix(res, []byte(fmt.Sprintf("<li>%s: %s</li></ul>", author, text))) {
 			t.Log("expected new message, but got")
@@ -156,7 +165,7 @@ func TestAllOk(t *testing.T) {
 			text := RandStringBytes(rand.Int()%100 + 10)
 			logs = append(logs, domain.Note{fmt.Sprintf("%d.03.42", i+1), template.HTML(text)})
 		}
-		httpRequest(t, "/api/log", http.MethodPut, logs, "postmodernist1848", testPassword)
+		httpRequest(t, "/api/log", http.MethodPut, logs, &auth{"postmodernist1848", testPassword})
 		res := httpGET(t, "/api/log")
 		var resLogs []domain.Note
 		if err := json.Unmarshal(res, &resLogs); err != nil {

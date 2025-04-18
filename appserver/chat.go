@@ -1,4 +1,4 @@
-package api
+package appserver
 
 import (
 	"encoding/json"
@@ -6,11 +6,10 @@ import (
 	"log"
 	"net/http"
 	"postmodernist1848.ru/domain"
-	"postmodernist1848.ru/repository/sqlite"
 )
 
-func GETChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
-	msgs, err := sqlite.GetChatMessages()
+func (s *router) getChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	msgs, err := s.repository.GetChatMessages()
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -26,7 +25,7 @@ func GETChatMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("</ul>"))
 }
 
-func POSTChatMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (s *router) postChatMessageHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var msg domain.ChatMessage
 	err := decoder.Decode(&msg)
@@ -46,10 +45,10 @@ func POSTChatMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Received message: ", msg)
-	if err = sqlite.InsertChatMessage(msg); err != nil {
+	if err = s.repository.InsertChatMessage(msg); err != nil {
 		log.Println("Failed to insert chat message: ", err)
 		http.Error(w, "Failed to send chat message", http.StatusInternalServerError)
 		return
 	}
-	GETChatMessagesHandler(w, r)
+	s.getChatMessagesHandler(w, r)
 }

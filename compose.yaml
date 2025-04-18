@@ -2,9 +2,9 @@ services:
   server:
     build: .
     ports:
-      - "${POSTMODERNIST1848_RU_PORT:?}:80"
+      - "${POSTMODERNIST1848_RU_PORT:?}:8080"
     volumes:
-      - ../database.db:/app/database.db
+      - ../database.sqlite:/app/database.sqlite
       - ../api_token:/app/api_token
     logging:
       driver: "json-file"
