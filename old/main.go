@@ -16,7 +16,6 @@ import (
 	"syscall"
 
 	_ "github.com/mattn/go-sqlite3"
-	"postmodernist1848.ru/githublines"
 )
 
 //go:embed index.html.tmpl
@@ -188,11 +187,8 @@ func main() {
 
 	http.HandleFunc("/", serveRoot)
 	http.HandleFunc("/log", serveLog)
-	http.HandleFunc("/api/chat-messages", serveChatMessages)
-	http.HandleFunc("/api/send-message", chatSendHandler)
 	http.HandleFunc("/static/", serveStaticFile)
 	http.HandleFunc("/assets/", serveStaticFile)
-	http.HandleFunc("/api/countlines/", githublines.ServeCountlines)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
