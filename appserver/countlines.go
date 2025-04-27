@@ -16,6 +16,8 @@ const countlinesReposLimit = 50
 var countlinesCurrentRequests atomic.Int32
 
 func getCountLinesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "https://old.postmodernist1848.ru")
+
 	for {
 		current := countlinesCurrentRequests.Load()
 		if current >= countlinesRequestsLimit {
