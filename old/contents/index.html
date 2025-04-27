@@ -68,7 +68,7 @@ Count lines in your github repo:
         outputDiv.replaceChildren(img);
 
         controller = new AbortController();
-        fetch(`/countlines/${username}`, {
+        fetch(`/api/countlines/${username}`, {
             signal: controller.signal
         })
           .then((response) => {
