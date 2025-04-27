@@ -1,0 +1,244 @@
+html, body {
+    margin: 0;
+    padding: 0;
+}
+span, div {
+    font-size: unset
+}
+
+#sidebar {
+    width: 15%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #2f343f; 
+    padding-right: 1%;
+    padding-left: 1%;
+    z-index: 0;
+    transition: transform 0.5s cubic-bezier(0.77,0.2,0.05,1.0);
+}
+
+.checkbox-with-text {
+    z-index: 1;
+}
+
+.checkbox-with-text label {
+    font-size: 0.3em;
+    color: white;
+    display: block;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+#contents a {
+    color: blue;
+}
+#contents a:visited {
+    color: purple;
+}
+
+#sidebar a {
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+}
+
+.sidebar a:hover {
+  background-image: linear-gradient(rgb(0 0 0/10%) 0 0);
+}
+
+.sidebar a:active, .sidebar a.current {
+  background-image: linear-gradient(rgb(0 0 0/20%) 0 0);
+}
+
+#contents {
+    padding-left: 20px;
+    padding-right: 20px;
+    margin-left: 17%;
+}
+
+#my-websit {
+    color: lightgray;
+    text-align: center;
+    padding-bottom: 5%;
+    margin-top: 20%
+}
+
+footer {
+    position: static;
+    bottom: 0;
+    right: 0;
+    text-align: right;
+    font-size: 0.5rem;
+    padding: 10px;
+}
+
+#restart-game {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+progress {
+    display: block;
+    margin-bottom: 10px;
+    border-radius: 7px; 
+    height: 22px;
+    box-shadow: 1px 1px 4px rgba( 0, 0, 0, 0.2 );
+}
+
+progress::-webkit-progress-bar {
+    border-radius: 7px;
+    background-color: lightgray;
+}
+
+progress::-webkit-progress-value {
+    background-color: red;
+    border-radius: 7px;
+}
+
+progress::-moz-progress-bar {
+    background-color: red;
+}
+
+footer a {
+    font-size: 0.5rem;
+}
+
+@font-face {
+    font-family: "Comic Sans MS";
+    src: local("Comic Sans MS"), url("/assets/Comic Sans MS.ttf") format("truetype");
+}
+
+* {
+    font-family: "Comic Sans MS";
+    font-size: 30pt;
+    color: #2f343f;
+}
+
+#haskell p, b {
+    font-family: "Tahoma";
+    font-size: 0.66rem;
+    line-height: 1.5;
+}
+
+#difficulty-label {
+    color: black; 
+    font-size: 1rem; 
+    position: absolute; 
+    top: 20px; 
+    right: 20px; 
+    text-align: right
+}
+
+#difficulty-slider {
+    width: 10%;
+    position: absolute;
+    top: 80px;
+    right: 0;
+    margin-right: 20px
+}
+
+#healthbar {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#typing-game-input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.center {
+    margin: 0 auto;
+}
+
+#paste p {
+    font-size: unset;
+}
+#paste {
+    font-size: 0.7em;
+}
+#paste h5, h6 {
+    font-size: 1em;
+    margin-bottom: 0.5em;
+}
+#paste h6 {
+    margin-top: 1em;
+}
+#paste h5 {
+    margin-top: 1em;
+    cursor: pointer;
+}
+
+#paste h5:hover {
+  background-color: #ccc;
+}
+
+#paste div.hidden {
+    display: none;
+}
+
+#paste div.notes {
+    margin-bottom: 2em;
+}
+
+#hint {
+    color: gray;
+    font-size: 0.5em;
+    margin-top: 0.5em;
+    padding: 1em;
+    border: dashed;
+    border-radius: 10px;
+    border-color: gray;
+}
+
+td input {
+    width: 100px;
+}
+td {
+    text-align: center;
+    width: 100px;
+}
+
+@media screen and (max-width: 700px) {
+    * {
+        font-size: 16pt;
+    }
+    #sidebar {
+        position: static;
+        width: 90%;
+        height: 40%;
+        padding: 5%;
+    }
+    #contents {
+        margin-left: 0;
+    }
+    #my-websit {
+        margin-top: 0;
+    }
+    #sidebar a {
+        display: inline-block;
+        text-align: center;
+        text-decoration: none;
+    }
+    #sidebar-checkbox-with-text {
+        display: none;
+    }
+    #difficulty-label {
+        position: static;
+    }
+    #difficulty-slider {
+        position: static;
+        width: 100%;
+    }
+    #restart-game {
+        posiion: static;
+    }
+
+}

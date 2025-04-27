@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="/static/style.css">
+        <title>postmodernist1848 personal website</title>
+        <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="/static/index.js"></script>
+    </head>
+    <body>
+        <div class="checkbox-with-text" style="position: fixed; top: 0; margin: 20px" id="sidebar-checkbox-with-text">
+            <label id="sidebar-toggle-label"><input type="checkbox" id="sidebar-toggle"/>hide sidebar</label>
+        </div>
+        <div id="sidebar" class="sidebar">
+            <div id="my-websit">my websit</div>
+            <a style="background-color: #81a1c1" href="/">int main</a>
+            <a style="background-color: #a3be8c" href="/articles">articles</a>
+            <a style="background-color: #ebcb8b" href="/funi">funi</a>
+            <a style="background-color: #b48ead" href="/game">game</a>
+            <a style="background-color: #f59335" href="/chat">chat</a>
+            <a style="background-color: #bf616a" href="/links">links</a>
+            <fieldset style="height: 10%">
+                <legend style="font-size: 0.5em; color: white">Funi stuff</legend>
+                <div class="checkbox-with-text">
+                    <label> 
+                        <input type="checkbox" id="rainbow-toggle"/>rainbow</label>
+                </div>
+            </fieldset>
+        </div>
+        <div id="contents">
+        {{.contents}}
+        </div>
+        <footer>
+            Copyright <a href="/links">postmodernist1848</a>
+        </footer>
+    </body>
+</html>
+

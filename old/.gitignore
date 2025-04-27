@@ -1,0 +1,5 @@
+main
+server.key
+server.crt
+.idea
+database.db
