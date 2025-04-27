@@ -1,0 +1,4 @@
+[submodule "old"]
+	path = old
+	url = git@github.com:postmodernist1848/postmodernist1848.ru.git
+    branch = old
