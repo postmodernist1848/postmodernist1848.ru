@@ -18,7 +18,7 @@ import (
 	"postmodernist1848.ru/domain"
 )
 
-const testServerAddr = "localhost:8080"
+const testServerAddr = "localhost:8081"
 const testServerURL = "http://" + testServerAddr
 
 func testServer(t *testing.T) *http.Server {
