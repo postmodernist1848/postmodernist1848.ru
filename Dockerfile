@@ -14,7 +14,7 @@ RUN --mount=type=cache,target="/root/.cache/go-build" go build ./cmd/server
 FROM debian
 
 RUN apt-get update
-RUN apt install -y ca-certificates
+RUN apt install -y ca-certificates git
 
 WORKDIR /app
 COPY --from=builder /build/server /app/
