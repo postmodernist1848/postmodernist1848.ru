@@ -194,11 +194,15 @@
       "pluginVersion": "12.0.1",
       "targets": [
         {
+          "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "increase(http_errors_total[$__interval])",
+          "expr": "increase(http_responses_error_total[$__rate_interval])",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "legendFormat": "__auto",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "Errors increase",
@@ -309,5 +313,5 @@
   "timezone": "browser",
   "title": "postmodernist1848.ru metrics",
   "uid": "5b8c943d-15ba-41c7-b8b3-538b178c91d9",
-  "version": 3
+  "version": 2
 }

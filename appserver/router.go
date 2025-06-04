@@ -50,7 +50,6 @@ func newRouter(repository *sqlite.Repository) *router {
 			[]string{"path", "method"},
 		)
 
-		// errorResponses counts HTTP errors (status codes >= 400), labeled by path, method, and status code
 		errorResponses = promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "http_responses_error_total",
