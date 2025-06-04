@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"postmodernist1848.ru/repository/sqlite"
 	"postmodernist1848.ru/resources"
+	"strconv"
 	"strings"
 	"time"
 
@@ -181,7 +182,7 @@ func (s *router) MetricsAndLoggingMiddleware(next http.Handler) http.Handler {
 		s.totalRequests.WithLabelValues(r.URL.Path, r.Method).Inc()
 		s.requestDuration.WithLabelValues(r.URL.Path, r.Method).Observe(latency.Seconds())
 		if rec.statusCode >= 400 {
-			s.errorResponses.WithLabelValues(r.URL.Path, r.Method).Inc()
+			s.errorResponses.WithLabelValues(r.URL.Path, r.Method, strconv.Itoa(rec.statusCode)).Inc()
 		}
 
 		log.Printf("[%d] %s %s took %v", rec.statusCode, r.Method, r.URL.Path, latency)
