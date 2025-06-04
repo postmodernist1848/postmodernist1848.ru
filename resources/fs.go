@@ -23,5 +23,13 @@ func ContentsTemplate() *template.Template {
 	return contentsTemplate
 }
 
+//go:embed template/metrics.html.tmpl
+var metricsTemplateString string
+var metricsTemplate = template.Must(template.New("metrics").Parse(metricsTemplateString))
+
+func MetricsTemplate() *template.Template {
+	return metricsTemplate
+}
+
 //go:embed articles assets static contents index.html
 var FS embed.FS
