@@ -47,7 +47,7 @@ services:
   grafana:
     image: grafana/grafana:latest # Use the official Grafana Docker image
     ports:
-      - "3000:8080" # Map host port 3000 to container port 3000 for UI access
+      - "{GRAFANA_PORT:?}:8080"
     volumes:
       - ./grafana:/etc/grafana/ # Mount your grafana.ini (optional)
       # Optional: For persistent storage of Grafana data
