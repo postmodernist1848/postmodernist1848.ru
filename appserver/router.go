@@ -1,8 +1,8 @@
 package appserver
 
 import (
-	"bytes"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"html/template"
 	"io"
 	"log"
@@ -10,8 +10,10 @@ import (
 	"postmodernist1848.ru/repository/sqlite"
 	"postmodernist1848.ru/resources"
 	"strings"
-	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 type metric struct {
@@ -21,15 +23,46 @@ type metric struct {
 }
 
 type router struct {
-	repository   *sqlite.Repository
-	metricsMu    sync.RWMutex
-	metricsQueue []metric
+	repository *sqlite.Repository
+
+	totalRequests   *prometheus.CounterVec
+	requestDuration *prometheus.HistogramVec
+	errorResponses  *prometheus.CounterVec
 }
 
 func newRouter(repository *sqlite.Repository) *router {
+	var (
+		totalRequests = promauto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_requests_total",
+				Help: "Total number of HTTP requests processed, by path and method.",
+			},
+			[]string{"path", "method"},
+		)
+
+		requestDuration = promauto.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "http_request_duration_seconds",
+				Help:    "Histogram of HTTP request durations in seconds, by path and method.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"path", "method"},
+		)
+
+		// errorResponses counts HTTP errors (status codes >= 400), labeled by path, method, and status code
+		errorResponses = promauto.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "http_responses_error_total",
+				Help: "Total number of HTTP error responses (status >= 400), by path, method, and status code.",
+			},
+			[]string{"path", "method", "status"},
+		)
+	)
 	return &router{
-		repository:   repository,
-		metricsQueue: make([]metric, 0),
+		repository:      repository,
+		totalRequests:   totalRequests,
+		requestDuration: requestDuration,
+		errorResponses:  errorResponses,
 	}
 }
 
@@ -134,7 +167,7 @@ func (rec *statusRecorder) WriteHeader(code int) {
 func (s *router) MetricsAndLoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/metrics" {
-			next.ServeHTTP(w, r)
+			promhttp.Handler().ServeHTTP(w, r)
 			return
 		}
 
@@ -145,61 +178,14 @@ func (s *router) MetricsAndLoggingMiddleware(next http.Handler) http.Handler {
 
 		latency := time.Since(start)
 
-		m := metric{timestamp: start, statusCode: rec.statusCode, latency: latency}
-
-		s.metricsMu.Lock()
-		defer s.metricsMu.Unlock()
-		const queueSize = 1000
-		s.metricsQueue = append(s.metricsQueue, m)
-		if len(s.metricsQueue) > queueSize {
-			s.metricsQueue = s.metricsQueue[len(s.metricsQueue)-queueSize:]
+		s.totalRequests.WithLabelValues(r.URL.Path, r.Method).Inc()
+		s.requestDuration.WithLabelValues(r.URL.Path, r.Method).Observe(latency.Seconds())
+		if rec.statusCode >= 400 {
+			s.errorResponses.WithLabelValues(r.URL.Path, r.Method).Inc()
 		}
 
 		log.Printf("[%d] %s %s took %v", rec.statusCode, r.Method, r.URL.Path, latency)
 	})
-}
-
-func (s *router) metricsHandler(w http.ResponseWriter, r *http.Request) {
-	// render stats from metricsQueue as an HTML page
-	s.metricsMu.RLock()
-	defer s.metricsMu.RUnlock()
-
-	var totalRequests int
-	var totalLatency time.Duration
-	var errorCount int
-
-	now := time.Now()
-	for _, m := range s.metricsQueue {
-		if now.Sub(m.timestamp) > time.Second {
-			continue
-		}
-		totalRequests++
-		totalLatency += m.latency
-		if m.statusCode >= 400 {
-			errorCount++
-		}
-	}
-	averageLatency := time.Duration(int64(float64(totalLatency) / float64(totalRequests)))
-	if totalRequests == 0 {
-		averageLatency = 0
-	}
-
-	metricsHTML := &bytes.Buffer{}
-
-	data := map[string]interface{}{
-		"totalRequests":  totalRequests,
-		"averageLatency": averageLatency,
-		"errorCount":     errorCount,
-		"errorRate":      float64(errorCount) / float64(totalRequests),
-	}
-
-	if err := resources.MetricsTemplate().Execute(metricsHTML, data); err != nil {
-		log.Println("Failed to execute metrics template:", err)
-		serveError(w, r)
-		return
-	}
-
-	serveContents(w, r, metricsHTML)
 }
 
 func New(addr string, repository *sqlite.Repository) *http.Server {
@@ -220,7 +206,6 @@ func New(addr string, repository *sqlite.Repository) *http.Server {
 
 	r := newRouter(repository)
 	mux.HandleFunc("/log", r.logHandler)
-	mux.HandleFunc("GET /metrics", r.metricsHandler)
 
 	mux.HandleFunc("GET /api/countlines/{username}", getCountLinesHandler)
 	mux.HandleFunc("GET /api/message", r.getChatMessagesHandler)

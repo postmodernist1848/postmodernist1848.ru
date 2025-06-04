@@ -3,6 +3,8 @@ services:
     build: .
     ports:
       - "${POSTMODERNIST1848_RU_PORT:?}:8080"
+    expose:
+      - "8080" # for prometheus
     volumes:
       - ../database.sqlite:/app/database.sqlite
       - ../api_token:/app/api_token
@@ -12,6 +14,8 @@ services:
         max-size: "10m"
         max-file: "3"
     restart: always
+    networks:
+      - monitoring_network
 
   old-server:
     build: ./old/
@@ -25,3 +29,46 @@ services:
         max-size: "10m"
         max-file: "3"
     restart: always
+
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/etc/prometheus
+      # Optional: For persistent storage of Prometheus data (highly recommended for production)
+      # - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml --web.enable-remote-write-receiver --web.enable-lifecycle
+    depends_on:
+      - server
+    networks:
+      - monitoring_network
+
+  # Grafana service
+  grafana:
+    image: grafana/grafana:latest # Use the official Grafana Docker image
+    ports:
+      - "3000:8080" # Map host port 3000 to container port 3000 for UI access
+    volumes:
+      - ./grafana:/etc/grafana/ # Mount your grafana.ini (optional)
+      # Optional: For persistent storage of Grafana data
+      # - grafana_data:/var/lib/grafana
+      # You can also use Grafana provisioning for datasources and dashboards:
+      # - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      # - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "${GF_SECURITY_ADMIN_PASSWORD:?}"
+    depends_on:
+      - prometheus # Ensure Prometheus is running before Grafana tries to connect
+    networks:
+      - monitoring_network
+
+# Define Docker volumes for persistent data (optional but recommended for production)
+volumes:
+  prometheus_data:
+  grafana_data:
+
+# Define a custom bridge network for internal communication
+networks:
+  monitoring_network:
+    driver: bridge
