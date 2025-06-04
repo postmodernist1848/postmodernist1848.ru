@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    version: 1
+    editable: true
+    # Basic Auth if needed (not for our setup):
+    # basicAuth: true
+    # basicAuthUser: user
+    # secureJsonData:
+    #   basicAuthPassword: password
